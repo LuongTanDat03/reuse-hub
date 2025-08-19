@@ -1,0 +1,23 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_local
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reuse_hub
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq_local
+    ports:
+       - "5672:5672"     # AMQP
+       - "15672:15672"   # UI quản trị
+    environment:
+       RABBITMQ_DEFAULT_USER: admin
+       RABBITMQ_DEFAULT_PASS: admin
+    restart: unless-stopped
