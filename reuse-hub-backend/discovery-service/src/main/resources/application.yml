@@ -1,9 +1,16 @@
 server:
-  port: 8888
+  port: 8761
 
 spring:
   application:
     name: discovery-service
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    registry-sync-retry-wait-ms: 0
 
 management:
   endpoints:
