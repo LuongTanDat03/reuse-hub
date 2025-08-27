@@ -12,6 +12,7 @@ package vn.tphcm.userservice.services;
  */
 
 import org.springframework.stereotype.Service;
+import vn.tphcm.userservice.dtos.request.IntrospectRequest;
 import vn.tphcm.userservice.dtos.request.RegisterRequest;
 import vn.tphcm.userservice.dtos.request.SignInRequest;
 import vn.tphcm.userservice.dtos.response.MessageResponse;
@@ -27,4 +28,6 @@ public interface AuthenticationService {
     MessageResponse logout();
 
     MessageResponse verifyEmail(Long userId, String token);
+
+    MessageResponse introspect(IntrospectRequest request);
 }

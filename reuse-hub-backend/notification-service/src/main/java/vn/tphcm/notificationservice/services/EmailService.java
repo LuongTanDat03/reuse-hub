@@ -4,7 +4,7 @@
  * Copyright (c) 2025. All rights reserved.
  */
 
-package vn.tphcm.userservice.services;
+package vn.tphcm.notificationservice.services;
 
 /*
  * @author: Luong Tan Dat
@@ -14,7 +14,7 @@ package vn.tphcm.userservice.services;
 import com.rabbitmq.client.Channel;
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Service;
-import vn.tphcm.userservice.contracts.VerificationMessage;
+import vn.tphcm.notificationservice.contracts.VerificationMessage;
 
 @Service
 public interface EmailService {

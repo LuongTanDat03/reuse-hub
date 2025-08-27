@@ -28,8 +28,10 @@ import org.springframework.util.StringUtils;
 import vn.tphcm.userservice.commons.TokenType;
 import vn.tphcm.userservice.commons.UserStatus;
 import vn.tphcm.userservice.contracts.VerificationMessage;
+import vn.tphcm.userservice.dtos.request.IntrospectRequest;
 import vn.tphcm.userservice.dtos.request.RegisterRequest;
 import vn.tphcm.userservice.dtos.request.SignInRequest;
+import vn.tphcm.userservice.dtos.response.IntrospectReponse;
 import vn.tphcm.userservice.dtos.response.MessageResponse;
 import vn.tphcm.userservice.dtos.response.SignInResponse;
 import vn.tphcm.userservice.exceptions.InvalidDataException;
@@ -213,7 +215,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return MessageResponse.builder()
                 .status(HttpStatus.CREATED.value())
                 .message("User registered successfully, Please check your email to verify your account.")
-                .data(request)
+                .data(newUser)
                 .timestamp(OffsetDateTime.now())
                 .build();
     }
@@ -294,6 +296,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .data(userOptional.get())
                 .timestamp(OffsetDateTime.now())
                 .build();
+    }
+
+    @Override
+    public MessageResponse introspect(IntrospectRequest request) {
+        return jwtService.isTokenValid(request.getToken(), TokenType.ACCESS_TOKEN) ?
+                MessageResponse.builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Token is valid")
+                        .data(IntrospectReponse.builder().valid(true).build())
+                        .timestamp(OffsetDateTime.now())
+                        .build() :
+                MessageResponse.builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Token is invalid")
+                        .data(IntrospectReponse.builder().valid(false).build())
+                        .timestamp(OffsetDateTime.now())
+                        .build();
     }
 
     public String generateCode() {

@@ -1,6 +1,64 @@
+server:
+  port: 8888
+
+app:
+  api-prefix: /api/v1
+
 spring:
   application:
-    name: api-gateway
+    name: discovery-service
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=${app.api-prefix}/users/**
 
-  config:
-    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
+        - id: item-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=${app.api-prefix}/items/**
+
+        - id: transaction-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=${app.api-prefix}/transactions/**
+
+        - id: notification-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=${app.api-prefix}/notifications/**
+
+        - id: chat-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=${app.api-prefix}/chats/**
+
+        - id: admin-service
+          uri: http://localhost:8086
+          predicates:
+            - Path=${app.api-prefix}/admin/**
+
+        - id: recommendation-service
+          uri: http://localhost:8087
+          predicates:
+            - Path=${app.api-prefix}/recommendations/**
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+logging:
+  level:
+    root: INFO
+    web: INFO

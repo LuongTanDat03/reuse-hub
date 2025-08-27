@@ -16,6 +16,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.locationtech.jts.geom.Point;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -72,8 +73,17 @@ public class User extends AbstractEntity<Long> implements UserDetails, Serializa
     @Column(name = "avatar")
     private String avatarUrl;
 
-    @Column(name = "reputation")
-    private Long reputation;
+    @Column(name = "rating_average")
+    private double ratingAverage;
+
+    @Column(name = "rating_count")
+    private int ratingCount;
+
+    @Column(columnDefinition = "geometry(Point, 4326)")
+    private Point location;
+
+    @Column(columnDefinition = "jsonb")
+    private String preferences;
 
     @NotBlank
     @Column(name = "username", nullable = false, unique = true)
@@ -88,6 +98,9 @@ public class User extends AbstractEntity<Long> implements UserDetails, Serializa
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<UserHasRole> roles = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<UserHistory> histories = new  ArrayList<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

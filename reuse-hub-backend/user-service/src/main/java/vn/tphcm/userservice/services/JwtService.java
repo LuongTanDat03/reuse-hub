@@ -25,4 +25,6 @@ public interface JwtService {
     String extractUsername(String token, TokenType tokenType);
 
     void deleteToken(String userId);
+
+    boolean isTokenValid(String token, TokenType tokenType);
 }

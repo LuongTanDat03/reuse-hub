@@ -1,9 +1,9 @@
 server:
-  port: 8080
+  port: 8081
 
 spring:
   application:
-    name: reuse-hub
+    name: user-service
   profiles:
     active: @spring.profiles.active@
 

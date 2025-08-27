@@ -14,9 +14,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import vn.tphcm.userservice.dtos.request.IntrospectRequest;
 import vn.tphcm.userservice.dtos.request.RegisterRequest;
 import vn.tphcm.userservice.dtos.request.SignInRequest;
+import vn.tphcm.userservice.dtos.response.IntrospectReponse;
 import vn.tphcm.userservice.dtos.response.MessageResponse;
+import vn.tphcm.userservice.dtos.response.SignInResponse;
+import vn.tphcm.userservice.models.User;
 import vn.tphcm.userservice.services.AuthenticationService;
 
 @RestController
@@ -28,7 +32,7 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     @Operation(summary = "Login to the application", description = "this endpoint allows users to log in and receive an access token.")
-    public MessageResponse login(@RequestBody SignInRequest signInRequest) {
+    public MessageResponse<SignInResponse> login(@RequestBody SignInRequest signInRequest) {
         log.info("Login request: {}", signInRequest);
 
         return authenticationService.getAccessToken(signInRequest);
@@ -36,7 +40,7 @@ public class AuthenticationController {
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user", description = "This endpoint allows users to register and receive an access token.")
-    public MessageResponse register(@RequestBody RegisterRequest request) {
+    public MessageResponse<User> register(@RequestBody RegisterRequest request) {
         log.info("Refresh token request: {}", request);
 
         return authenticationService.register(request);
@@ -56,6 +60,14 @@ public class AuthenticationController {
         log.info("Verify email request for userId: {}, verificationCode: {}", userId, verificationCode);
 
         return authenticationService.verifyEmail(userId, verificationCode);
+    }
+
+    @PostMapping("/introspect")
+    @Operation(summary = "Introspect access token", description = "This endpoint allows users to introspect their access token and retrieve user information.")
+    public MessageResponse introspectToken(@RequestBody IntrospectRequest token) {
+        log.info("Introspect token request for token: {}", token);
+
+        return authenticationService.introspect(token);
     }
 }
 

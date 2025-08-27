@@ -4,7 +4,7 @@
  * Copyright (c) 2025. All rights reserved.
  */
 
-package vn.tphcm.userservice.services.impl;
+package vn.tphcm.notificationservice.services.impl;
 /*
  * @author: Luong Tan Dat
  * @date: 8/18/2025
@@ -22,9 +22,9 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
-import vn.tphcm.userservice.configs.RabbitMQConfig;
-import vn.tphcm.userservice.contracts.VerificationMessage;
-import vn.tphcm.userservice.services.EmailService;
+import vn.tphcm.notificationservice.configs.RabbitMQConfig;
+import vn.tphcm.notificationservice.contracts.VerificationMessage;
+import vn.tphcm.notificationservice.services.EmailService;
 
 import java.util.HashMap;
 import java.util.Map;

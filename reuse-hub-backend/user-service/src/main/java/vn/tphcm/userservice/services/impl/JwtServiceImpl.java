@@ -101,6 +101,37 @@ public class JwtServiceImpl implements JwtService {
         log.info("Tokens deleted successfully for user: {}", userId);
     }
 
+    @Override
+    public boolean isTokenValid(String token, TokenType type) {
+        log.info("Validating token: {}", token);
+
+        try {
+            if (token == null || token.trim().isEmpty()) {
+                log.error("Token is null or empty");
+                return false;
+            }
+
+            String username = extractUsername(token, TokenType.ACCESS_TOKEN);
+
+            if (username == null || username.trim().isEmpty()) {
+                log.error("Username extracted from token is null or empty");
+                return false;
+            }
+
+            String redisKey = getRedisPrefix(username, type);
+            String storedToken = (String) redisTemplate.opsForValue().get(redisKey);
+
+            if (storedToken == null || !storedToken.equals(token)) {
+                log.error("Token not found or does not match the stored token in Redis");
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            log.error("Token validation failed: {}", e.getMessage());
+            return false;
+        }
+    }
 
     private <T> T extractClaim(TokenType type, String token, Function<Claims, T> claimsExtractor) {
         log.info("-----------------[EXTRACT CLAIM]-----------------");
