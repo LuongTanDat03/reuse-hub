@@ -1,8 +1,8 @@
 version: "3.8"
 services:
   postgres:
-    image: postgres:15
-    container_name: postgres_local
+    image: postgres:latest
+    container_name: postgres
     ports:
       - "5432:5432"
     environment:
@@ -13,7 +13,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management
-    container_name: rabbitmq_local
+    container_name: rabbitmq
     ports:
        - "5672:5672"     # AMQP
        - "15672:15672"   # UI quản trị
@@ -21,3 +21,12 @@ services:
        RABBITMQ_DEFAULT_USER: admin
        RABBITMQ_DEFAULT_PASS: admin
     restart: unless-stopped
+
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/12345678
+    ports:
+      - "7474:7474"
+      - "7687:7687"

@@ -1,0 +1,23 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: reuse-hub
+    version: 1.0.0
+
+jwt:
+  expiryMinutes: 10080
+  expiryDay: 7
+  accessKey: vp/W0H2km+ha54EMwdU0lsVb8JNtoFrRlXVgytwhCsA=
+  refreshKey: w+7+dny0YjqUN/bwKsejjgkBUdRUOeI7Liqr3jn2cqM=

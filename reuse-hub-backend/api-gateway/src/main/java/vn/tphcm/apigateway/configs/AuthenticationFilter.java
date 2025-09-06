@@ -12,9 +12,11 @@ package vn.tphcm.apigateway.configs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -42,31 +44,44 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     @NonFinal
     private String[] publicEndpoints = {
-            "/v1/auth/.*"
+            ".*/identity/auth/.*"
     };
+
+    @Value("${app.api-prefix}")
+    @NonFinal
+    private String apiPrefix;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Entering authentication filter...");
 
-        if(isPublicEndpoint(exchange.getRequest())){
+        if (isPublicEndpoint(exchange.getRequest())) {
             return chain.filter(exchange);
         }
 
-        List<String> authHeaders = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
+        String token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-        if(CollectionUtils.isEmpty(authHeaders)){
+        if (token == null || !token.startsWith("Bearer ")) {
             return unauthenticated(exchange.getResponse());
         }
 
-        String token = authHeaders.getFirst().replace("Bearer ", "");
-
+        token = token.substring(7);
         log.info("Token: {}", token);
 
         return identityService.introspect(token).flatMap(introspectResponseApiResponse -> {
-            if(introspectResponseApiResponse.getData().getValid()){
-                return chain.filter(exchange);
-            }else {
+            if (introspectResponseApiResponse.getData().isValid()) {
+                ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
+                        .header("X-User-Id", introspectResponseApiResponse.getData().getUserId())
+                        .header("X-User-Username", introspectResponseApiResponse.getData().getUsername())
+                        .header("X-User-Roles", String.join(",", introspectResponseApiResponse.getData().getRoles() == null ? List.of() : introspectResponseApiResponse.getData().getRoles()))
+                        .header("X-User-Permissions", String.join(",", introspectResponseApiResponse.getData().getPermissions() == null ? List.of() : introspectResponseApiResponse.getData().getPermissions()))
+                        .build();
+
+                return chain.filter(exchange.mutate()
+                        .request(modifiedRequest)
+                        .build());
+
+            } else {
                 return unauthenticated(exchange.getResponse());
             }
         }).onErrorResume(throwable -> {
@@ -80,11 +95,17 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         return -1;
     }
 
-    private boolean isPublicEndpoint(ServerHttpRequest request){
-        return Arrays.stream(publicEndpoints).anyMatch(s -> request.getURI().getPath().matches(s));
+    private boolean isPublicEndpoint(ServerHttpRequest request) {
+        String path = request.getURI().getPath();
+
+        boolean isPublicEndpoint = Arrays.stream(publicEndpoints).anyMatch(s -> path.matches(apiPrefix + s));
+        
+        log.info("Path: {} is Public: {}", path, isPublicEndpoint);
+        
+        return isPublicEndpoint;
     }
 
-    private Mono<Void> unauthenticated(ServerHttpResponse response){
+    private Mono<Void> unauthenticated(ServerHttpResponse response) {
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .status(401)
                 .message("Unauthenticated")
@@ -92,7 +113,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         String body = null;
 
-        try{
+        try {
             body = objectMapper.writeValueAsString(apiResponse);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

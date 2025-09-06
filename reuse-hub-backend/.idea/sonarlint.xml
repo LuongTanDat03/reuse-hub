@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SonarLintProjectSettings">
+    <option name="moduleMapping">
+      <map>
+        <entry key="identity-service" value="identity-service (1)" />
+        <entry key="profile-service" value="user-service" />
+      </map>
+    </option>
+  </component>
+</project>

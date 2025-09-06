@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Eclipse ###
+api-gateway/src/main/resources/application-dev.yml

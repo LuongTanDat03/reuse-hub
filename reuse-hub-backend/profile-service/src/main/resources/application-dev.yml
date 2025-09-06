@@ -1,0 +1,23 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  neo4j:
+    uri: ${DATABASE_URI:bolt://localhost:7687}
+    authentication:
+      username: ${DATABASE_USERNAME:neo4j}
+      password: ${DATABASE_PASSWORD:12345678}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: reuse-hub
+    version: 1.0.0

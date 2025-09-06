@@ -1,0 +1,82 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual # publisher-returns: message unacknowledged
+        concurrency: 2 # many consumers for one queue
+        max-concurrency: 10 # max number of consumers for one queue
+        prefetch: 5 # number of messages to prefetch
+        shutdown-timeout: 10s
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          max-interval: 10000ms
+          multiplier: 2.0
+        default-requeue-rejected: false # if false, message will be sent to dead-letter queue
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/identity}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+
+  endpoint:
+    confirmUser: "http://localhost:8080/confirm?token="
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: reuse-hub
+    version: 1.0.0
+
+jwt:
+  expiryMinutes: 10080
+  expiryDay: 7
+  accessKey: vp/W0H2km+ha54EMwdU0lsVb8JNtoFrRlXVgytwhCsA=
+  refreshKey: w+7+dny0YjqUN/bwKsejjgkBUdRUOeI7Liqr3jn2cqM=
+
+app:
+  frontend:
+    url: http://localhost:5173
+
+cloudinary:
+  cloud:
+    name: dm6olod4x
+    api-key: 971329371956998
+    api-secret: cUdGvmu9_UlrOzHx_cMfxQGVwKg
+
+avatar:
+  default: https://i.ibb.co/mrL8wYRs/default.jpg
+
+feign:
+  client:
+    config:
+      profile-service:
+        url: "http://localhost:8082/api/v1/profile"
