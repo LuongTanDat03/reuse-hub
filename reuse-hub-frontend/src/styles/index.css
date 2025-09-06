@@ -1,0 +1,64 @@
+@import './tailwind.css';
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam:wght@400;500;700&family=Dongle:wght@700&family=Fredoka+One:wght@400&display=swap');
+
+/* Reset và thiết lập cơ bản */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+  height: 100%;
+  /* Ẩn thanh cuộn thừa */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Ẩn thanh cuộn cho webkit browsers */
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  font-family: 'Be Vietnam', 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: #2D418D;
+  height: 100%;
+  min-height: 100vh;
+  /* Ẩn thanh cuộn thừa */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+#root {
+  height: 100%;
+  overflow-x: hidden;
+  /* Chỉ hiển thị thanh cuộn cho container chính */
+  overflow-y: auto;
+}
+
+/* Custom scrollbar cho container chính */
+#root::-webkit-scrollbar {
+  width: 8px;
+}
+
+#root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#root::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+#root::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

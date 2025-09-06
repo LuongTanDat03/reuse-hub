@@ -1,0 +1,16 @@
+{
+  "name": "Vietnamese Printing Services",
+  "short_name": "In Xin",
+  "description": "Dịch vụ in ấn chất lượng cao",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#28367D",
+  "theme_color": "#B4D334",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon"
+    }
+  ]
+} 
