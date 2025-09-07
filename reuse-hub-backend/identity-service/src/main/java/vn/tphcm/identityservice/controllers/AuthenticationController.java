@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vn.tphcm.identityservice.dtos.request.IntrospectRequest;
+import vn.tphcm.identityservice.dtos.request.LogoutRequest;
 import vn.tphcm.identityservice.dtos.request.SignInRequest;
 import vn.tphcm.identityservice.dtos.request.UserCreationRequest;
 import vn.tphcm.identityservice.dtos.ApiResponse;
@@ -48,10 +49,10 @@ public class AuthenticationController {
 
     @PostMapping("/logout")
     @Operation(summary = "Logout from the application", description = "This endpoint allows users to log out and invalidate their access token.")
-    public ApiResponse<Void> logout() {
-        log.info("Logout request");
+    public ApiResponse<Void> logout(@RequestBody LogoutRequest request) {
+        log.info("Logout request for token: {}", request.getToken());
 
-        return authenticationService.logout();
+        return authenticationService.logout(request);
     }
 
     @PostMapping("/confirm")

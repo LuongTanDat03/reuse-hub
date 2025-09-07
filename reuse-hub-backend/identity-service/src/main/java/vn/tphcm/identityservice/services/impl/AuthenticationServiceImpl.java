@@ -11,6 +11,7 @@ package vn.tphcm.identityservice.services.impl;
  */
 
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ import vn.tphcm.event.dto.VerificationMessage;
 import vn.tphcm.identityservice.commons.TokenType;
 import vn.tphcm.identityservice.commons.UserStatus;
 import vn.tphcm.identityservice.dtos.request.IntrospectRequest;
+import vn.tphcm.identityservice.dtos.request.LogoutRequest;
 import vn.tphcm.identityservice.dtos.request.SignInRequest;
 import vn.tphcm.identityservice.dtos.request.UserCreationRequest;
 import vn.tphcm.identityservice.dtos.response.IntrospectResponse;
@@ -49,6 +51,7 @@ import vn.tphcm.identityservice.services.JwtService;
 import vn.tphcm.identityservice.services.MessageProducer;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,16 +83,24 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public ApiResponse<SignInResponse> getAccessToken(SignInRequest request) {
         log.info("Get Access Token");
 
-        List<String> authorities = new ArrayList<>();
+        List<String> authorities;
+        Optional<User> user = null;
         try {
             log.info("Username: {},Password: {}", request.getUsernameOrEmail(), request.getPassword());
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsernameOrEmail(), request.getPassword()));
 
             log.info("Authentication successful for user: {}", request.getUsernameOrEmail());
             log.info("Authorities: {}", authentication.getAuthorities());
-            authorities.add(authentication.getAuthorities().toString());
+            authorities = new ArrayList<>(authentication.getAuthorities().stream()
+                    .map(Object::toString)
+                    .toList());
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            user = userRepository.findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail());
+
+            if (user.isEmpty()) {
+                log.error("User not found: {}", request.getUsernameOrEmail());
+                throw new ResourceNotFoundException("User not found");
+            }
 
         } catch (BadCredentialsException e) {
             log.error("Authentication failed for user: {}", request.getUsernameOrEmail(), e);
@@ -108,7 +119,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String refreshToken = jwtService.generateRefreshToken(request.getUsernameOrEmail(), authorities);
         log.info("Generated refresh token: {}", refreshToken.substring(0, 7));
 
-        return ApiResponse.<SignInResponse>builder().status(HttpStatus.OK.value()).message("Sign In Successfully").data(SignInResponse.builder().accessToken(accessToken).refreshToken(refreshToken).usernameOrEmail(request.getUsernameOrEmail()).build()).timestamp(OffsetDateTime.now()).build();
+        redisTemplate.opsForValue().set("accessToken:" + user.get().getId(), accessToken, Duration.ofDays(7));
+        redisTemplate.opsForValue().set("refreshToken:" + user.get().getId(), refreshToken, Duration.ofDays(7));
+
+        return ApiResponse.<SignInResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Sign In Successfully")
+                .data(SignInResponse.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .usernameOrEmail(request.getUsernameOrEmail())
+                        .build())
+                .timestamp(OffsetDateTime.now()).build();
     }
 
     @Override
@@ -164,7 +186,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String verifyCode = generateCode();
 
         // Save verifyCode in Redis with a TTL of 5 minutes
-        String redisKey = "verifyCode:" + user.getId();
+        String redisKey = "userId:" + user.getId();
         redisTemplate.opsForValue().set(redisKey, verifyCode, TIMEOUT_REDIS, MINUTES);
         log.info("Stored verifyCode in Redis with key: {}, code: {}", redisKey, verifyCode);
 
@@ -181,31 +203,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public ApiResponse<Void> logout() {
-        // Get the current authentication from the security context
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            log.error("User is not authenticated");
-            throw new AccessDeniedException("User is not authenticated");
-        }
+    public ApiResponse<Void> logout(LogoutRequest request) {
+        String userId = jwtService.extractUsername(request.getToken(), TokenType.ACCESS_TOKEN);
 
-        String username = authentication.getName();
+        // Delete token from Redis
+        String accessToken = "accessToken:" + userId;
+        String refreshToken = "refreshToken:" + userId;
 
-        // Check if user exists
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            log.error("User not found with username: {}", username);
-            throw new ResourceNotFoundException("User not found");
-        }
+        jwtService.deleteToken(accessToken);
+        jwtService.deleteToken(refreshToken);
 
-        // Delete the access token from Redis
-        String redisKey = "accessToken:" + user.getId();
-        jwtService.deleteToken(redisKey);
-
-        // Clear the security context
-        SecurityContextHolder.clearContext();
-
-        return ApiResponse.<Void>builder().status(HttpStatus.OK.value()).message("Logout successful").data(null).timestamp(OffsetDateTime.now()).build();
+        return ApiResponse.<Void>builder()
+                .status(HttpStatus.OK.value())
+                .message("Logout successful")
+                .data(null)
+                .timestamp(OffsetDateTime.now()).build();
     }
 
     @Override
@@ -258,7 +270,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 log.error("User not found with ID: {}", userId);
                 return new ResourceNotFoundException("User not found");
             });
-            
+
             return ApiResponse.<IntrospectResponse>builder()
                     .status(HttpStatus.OK.value())
                     .message("Token is valid")

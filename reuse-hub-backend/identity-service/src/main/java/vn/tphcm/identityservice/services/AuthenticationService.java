@@ -13,6 +13,7 @@ package vn.tphcm.identityservice.services;
 
 import org.springframework.stereotype.Service;
 import vn.tphcm.identityservice.dtos.request.IntrospectRequest;
+import vn.tphcm.identityservice.dtos.request.LogoutRequest;
 import vn.tphcm.identityservice.dtos.request.SignInRequest;
 import vn.tphcm.identityservice.dtos.request.UserCreationRequest;
 import vn.tphcm.identityservice.dtos.ApiResponse;
@@ -28,7 +29,7 @@ public interface AuthenticationService {
 
     ApiResponse<UserResponse> register(UserCreationRequest request);
 
-    ApiResponse<Void> logout();
+    ApiResponse<Void> logout(LogoutRequest request);
 
     ApiResponse<UserResponse> verifyEmail(String userId, String token);
 
