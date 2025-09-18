@@ -11,23 +11,18 @@ package vn.tphcm.notificationservice.services.impl;
  */
 
 import com.rabbitmq.client.Channel;
+import event.dto.NotificationEvent;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
-import vn.tphcm.notificationservice.configs.RabbitMQConfig;
-import vn.tphcm.notificationservice.contracts.VerificationMessage;
 import vn.tphcm.notificationservice.services.EmailService;
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 @Service
@@ -38,9 +33,8 @@ public class EmailServiceImpl implements EmailService {
     private final SpringTemplateEngine templateEngine;
 
     @Override
-    @RabbitListener(queues = RabbitMQConfig.Q_VERIFICATION)
-    public void sendVerificationEmail(VerificationMessage message, Message amqpMessage, Channel chanel) throws Exception {
-        log.info("Received verification email message: {}", message);
+    public void sendVerificationEmail(NotificationEvent event, Message amqpMessage, Channel chanel) throws Exception {
+        log.info("Received verification email message: {}", event);
 
         long tag = amqpMessage.getMessageProperties().getDeliveryTag();
         try {
@@ -48,19 +42,19 @@ public class EmailServiceImpl implements EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
             Context context = new Context();
 
-            Map<String, Object> properties = new HashMap<>();
-            properties.put("verificationCode", message.verificationCode());
-            context.setVariables(properties);
+            context.setVariables(event.getParam());
 
-            helper.setTo(message.email());
-            helper.setSubject("Please confirm your account");
-            String html = templateEngine.process("send-email.html", context);
+            helper.setTo(event.getRecipient());
+            helper.setSubject(event.getSubject() != null ? event.getSubject() : "Please confirm your account");
+
+            String templateName = event.getTemplateCode() != null ? event.getTemplateCode() : "send-email.html";
+            String html = templateEngine.process(templateName, context);
             helper.setText(html, true);
 
             mailSender.send(mimeMessage);
 
             chanel.basicAck(tag, false);
-            log.info("Link has sent to user, email={}, code={}", message.email(), message.verificationCode());
+            log.info("Link has sent to user, email={}, param={}", event.getRecipient(), event.getParam());
 
         } catch (MessagingException e) {
             chanel.basicReject(tag, false); // No requeue => Don't retry sending the message before restarting the service

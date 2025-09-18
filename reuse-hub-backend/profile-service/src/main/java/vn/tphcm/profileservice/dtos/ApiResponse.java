@@ -23,7 +23,7 @@ import java.time.OffsetDateTime;
 public class ApiResponse<T> {
     private int status;
     private String message;
-    private Object data;
+    private T data;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     private OffsetDateTime timestamp;
 }

@@ -11,10 +11,13 @@ package vn.tphcm.profileservice.repositories;
  * @date: 9/1/2025
  */
 
-import org.springframework.data.neo4j.repository.Neo4jRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.tphcm.profileservice.models.User;
 
+import java.util.Optional;
+
 @Repository
-public interface UserRepository extends Neo4jRepository<User, String> {
+public interface UserRepository extends JpaRepository<User, String> {
+    Optional<User> findByUserId(String userId);
 }

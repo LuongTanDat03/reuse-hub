@@ -12,9 +12,17 @@ package vn.tphcm.profileservice.services;
  */
 
 
+import org.springframework.web.multipart.MultipartFile;
+import vn.tphcm.profileservice.dtos.ApiResponse;
+import vn.tphcm.profileservice.dtos.request.ProfileUpdateRequest;
 import vn.tphcm.profileservice.dtos.request.ProfileUserRequest;
+import vn.tphcm.profileservice.dtos.response.ProfileResponse;
 import vn.tphcm.profileservice.dtos.response.UserResponse;
 
 public interface ProfileService {
-    UserResponse createProfile(ProfileUserRequest request);
+    ApiResponse<UserResponse> createProfile(ProfileUserRequest request);
+
+    ApiResponse<ProfileResponse> getProfile(String userId);
+
+    ApiResponse<ProfileResponse> updateProfile(ProfileUpdateRequest request, MultipartFile file);
 }

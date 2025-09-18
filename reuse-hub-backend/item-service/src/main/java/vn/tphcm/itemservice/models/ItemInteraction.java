@@ -27,8 +27,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Table
 @Entity(name = "tbl_item_interaction")
-public class ItemInteraction extends AbstractEntity<Long> implements Serializable {
-    private Long userId;
+public class ItemInteraction extends AbstractEntity<String> implements Serializable {
+    private String userId;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)

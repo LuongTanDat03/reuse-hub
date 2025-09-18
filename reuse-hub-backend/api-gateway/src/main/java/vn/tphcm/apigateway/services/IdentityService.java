@@ -13,9 +13,9 @@ package vn.tphcm.apigateway.services;
 
 
 import reactor.core.publisher.Mono;
-import vn.tphcm.apigateway.dtos.response.ApiResponse;
+import vn.tphcm.apigateway.dtos.ApiResponse;
 import vn.tphcm.apigateway.dtos.response.IdentityResponse;
 
 public interface IdentityService {
-    public Mono<ApiResponse<IdentityResponse>> introspect(String token);
+    Mono<ApiResponse<IdentityResponse>> introspect(String token);
 }

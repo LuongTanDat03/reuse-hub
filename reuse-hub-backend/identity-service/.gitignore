@@ -33,5 +33,5 @@ build/
 .vscode/
 
 
-### Eclipse ###
+### Github-Secret ###
 identity-service/src/main/resources/application-dev.yml

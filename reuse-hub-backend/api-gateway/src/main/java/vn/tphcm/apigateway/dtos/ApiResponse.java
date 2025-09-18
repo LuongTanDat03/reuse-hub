@@ -4,7 +4,7 @@
  * Copyright (c) 2025. All rights reserved.
  */
 
-package vn.tphcm.apigateway.dtos.response;
+package vn.tphcm.apigateway.dtos;
 /*
  * @author: Luong Tan Dat
  * @date: 8/26/2025

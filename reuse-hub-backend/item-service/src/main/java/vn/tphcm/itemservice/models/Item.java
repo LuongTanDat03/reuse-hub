@@ -30,9 +30,9 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "tbl_item")
-public class Item extends AbstractEntity<Long> implements Serializable {
+public class Item extends AbstractEntity<String> implements Serializable {
     @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private String userId;
 
     private String title;
 

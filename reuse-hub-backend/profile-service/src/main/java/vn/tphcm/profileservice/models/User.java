@@ -10,14 +10,14 @@ package vn.tphcm.profileservice.models;
  * @date: 8/31/2025
  */
 
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.Point;
-import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.Property;
-import org.springframework.data.neo4j.core.schema.Relationship;
 import vn.tphcm.profileservice.commons.Gender;
 
 import java.io.Serializable;
@@ -29,17 +29,26 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Node("tbl_user_profile")
-public class User extends AbstractEntity implements Serializable {
-    @Property("user_id")
+@Entity
+@Table(name = "tbl_users", indexes = {
+        @Index(name = "idx_user_user_id", columnList = "user_id", unique = true),
+        @Index(name = "idx_user_email", columnList = "email", unique = true),
+        @Index(name = "idx_user_phone", columnList = "phone", unique = true),
+        @Index(name = "idx_user_username", columnList = "username", unique = true),
+        @Index(name = "idx_user_location", columnList = "location")
+})
+public class User extends AbstractEntity<String> implements Serializable {
+    @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
 
-    @Property("first_name")
+    @Column(name = "first_name")
     private String firstName;
 
-    @Property("last_name")
+    @Column(name = "last_name")
     private String lastName;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private Gender gender;
 
     private LocalDate birthday;
@@ -48,22 +57,46 @@ public class User extends AbstractEntity implements Serializable {
 
     private String email;
 
-    @Property("avatar")
+    @Column(name = "avatar_url")
     private String avatarUrl;
 
-    @Property("rating_average")
+    @Column(name = "rating_average")
     private double ratingAverage;
 
-    @Property("rating_count")
+    @Column(name = "rating_count")
     private int ratingCount;
 
+    @Column(columnDefinition = "geometry(Point, 4326)")
     private Point location;
 
+    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String preferences;
 
-    @Relationship(type = "HAS_ADDRESS", direction = Relationship.Direction.OUTGOING)
-    private List<Address> address;
+    @Column(name = "username", nullable = false, unique = true)
+    private String username;
 
-    @Relationship(type = "HAS_HISTORY", direction = Relationship.Direction.OUTGOING)
+    @Column(name = "password", nullable = false)
+    private String password;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Address> address = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserHistory> histories = new ArrayList<>();
+
+    public void replaceAddresses(List<Address> newAddresses) {
+        if (this.address == null) {
+            this.address = new ArrayList<>();
+        }
+
+        this.address.clear();
+
+        if (newAddresses != null) {
+            for (Address add : newAddresses) {
+                add.setUser(this);
+                this.address.add(add);
+            }
+        }
+    }
 }

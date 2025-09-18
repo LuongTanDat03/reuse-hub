@@ -11,10 +11,10 @@ package vn.tphcm.profileservice.repositories;
  * @date: 9/6/2025
  */
 
-import org.springframework.data.neo4j.repository.Neo4jRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.tphcm.profileservice.models.Address;
 
 @Repository
-public interface AddressRepository extends Neo4jRepository<Address, String> {
+public interface AddressRepository extends JpaRepository<Address, String> {
 }

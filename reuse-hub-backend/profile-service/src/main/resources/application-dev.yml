@@ -3,12 +3,25 @@ spring:
     activate:
       on-profile: dev
 
-  neo4j:
-    uri: ${DATABASE_URI:bolt://localhost:7687}
-    authentication:
-      username: ${DATABASE_USERNAME:neo4j}
-      password: ${DATABASE_PASSWORD:12345678}
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/profile}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME:reuse-hub-images}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY_ID:admin}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:password}
+    base-url: https://${aws.s3.bucket-name}.s3.${aws.s3.region}.amazonaws.com
 springdoc:
   api-docs:
     enabled: true
@@ -19,5 +32,5 @@ openapi:
   service:
     api-docs: reuse-hub-api-docs
     server: ${BACKEND_SERVICE:http://localhost:${server.port}}
-    title: reuse-hub
+    title: profile-service
     version: 1.0.0

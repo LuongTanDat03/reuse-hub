@@ -13,16 +13,23 @@ package vn.tphcm.profileservice.dtos.response;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
 @Setter
 public class UserResponse {
     private String id;
+
     private String userId;
+
     private String phone;
+
     private String email;
+
     private String username;
+
     private String password;
+
     private Set<UserHasRoleResponse> userRoles;
 }

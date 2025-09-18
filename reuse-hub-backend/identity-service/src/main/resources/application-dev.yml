@@ -53,7 +53,7 @@ openapi:
   service:
     api-docs: reuse-hub-api-docs
     server: ${BACKEND_SERVICE:http://localhost:${server.port}}
-    title: reuse-hub
+    title: identity-service
     version: 1.0.0
 
 jwt:
@@ -79,4 +79,4 @@ feign:
   client:
     config:
       profile-service:
-        url: "http://localhost:8082/api/v1/profile"
+        url: "http://localhost:8082/profile"

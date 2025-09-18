@@ -11,8 +11,10 @@ package vn.tphcm.profileservice.dtos.request;
  */
 
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class ProfileAddressRequest {
     private String addressId;
 

@@ -12,11 +12,15 @@ package vn.tphcm.profileservice.mapper;
  */
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import vn.tphcm.profileservice.dtos.request.ProfileAddressRequest;
-import vn.tphcm.profileservice.dtos.response.AddressResponse;
 import vn.tphcm.profileservice.models.Address;
 
 @Mapper(componentModel = "spring")
 public interface AddressMapper {
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "user", ignore = true)
     Address toAddress(ProfileAddressRequest request);
 }

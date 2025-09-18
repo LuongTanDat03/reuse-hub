@@ -21,8 +21,4 @@ import java.util.List;
 @Builder
 public class IdentityResponse {
     private boolean valid;
-    private String userId;
-    private String username;
-    private List<String> roles;
-    private List<String> permissions;
 }

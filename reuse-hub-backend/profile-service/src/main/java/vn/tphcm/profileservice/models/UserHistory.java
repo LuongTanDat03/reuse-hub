@@ -10,13 +10,13 @@ package vn.tphcm.profileservice.models;
  * @date: 8/23/2025
  */
 
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.Property;
-import org.springframework.data.neo4j.core.schema.Relationship;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import vn.tphcm.profileservice.commons.ActionType;
 
 import java.io.Serializable;
@@ -25,15 +25,19 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Node("tbl_user_history")
-public class UserHistory extends AbstractEntity implements Serializable {
-    @Relationship(type = "HAS_HISTORY", direction = Relationship.Direction.INCOMING)
+@Entity
+@Table(name = "tbl_user_history")
+public class UserHistory extends AbstractEntity<String> implements Serializable {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Property("action_type")
+    @Column(name = "action")
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ActionType actionType;
 
-    @Property("item_id")
+    @Column(name = "item_id")
     private String itemId;
 
 }

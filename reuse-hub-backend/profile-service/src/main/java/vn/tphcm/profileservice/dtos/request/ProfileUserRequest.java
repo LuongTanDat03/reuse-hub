@@ -12,9 +12,12 @@ package vn.tphcm.profileservice.dtos.request;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.locationtech.jts.geom.Point;
 import vn.tphcm.profileservice.commons.Gender;
+import vn.tphcm.profileservice.models.UserHistory;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Setter
@@ -34,9 +37,21 @@ public class ProfileUserRequest {
 
     private LocalDate birthday;
 
+    private String avatarUrl;
+
+    private double ratingAverage;
+
+    private int ratingCount;
+
+    private Point location;
+
+    private String preferences;
+
     private String username;
 
     private String password;
 
     private List<ProfileAddressRequest> address;
+
+    private List<UserHistory> histories;
 }

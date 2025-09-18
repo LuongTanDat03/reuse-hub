@@ -15,9 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
+import vn.tphcm.event.dto.NotificationEvent;
 import vn.tphcm.identityservice.configs.RabbitMQConfig;
-import vn.tphcm.event.dto.VerificationMessage;
 import vn.tphcm.identityservice.services.MessageProducer;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -26,18 +28,21 @@ public class MessageProducerImpl implements MessageProducer {
     private final RabbitTemplate rabbitTemplate;
 
     @Override
-    public void publishVerificationEmail(VerificationMessage verificationMessage) {
+    public void publishVerificationEmail(NotificationEvent event) {
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE_VERIFICATION,
                 RabbitMQConfig.RK_VERIFICATION_ITEM,
-                verificationMessage,
+                event,
                 message -> {
-                    message.getMessageProperties().setMessageId(verificationMessage.messageId());
+                    message.getMessageProperties().setMessageId(UUID.randomUUID().toString());
                     message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
                     return message;
                 }
         );
 
-        log.info("Sent verification email message: {}", verificationMessage.messageId());
+        log.info("📨 Sent verification email event to RabbitMQ: recipient={}, subject={}, template={}",
+                event.getRecipient(),
+                event.getSubject(),
+                event.getTemplateCode());
     }
 }

@@ -17,9 +17,10 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
 openapi:
   service:
     api-docs: reuse-hub-api-docs
     server: ${BACKEND_SERVICE:http://localhost:${server.port}}
-    title: reuse-hub
+    title: profile-service
     version: 1.0.0

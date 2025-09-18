@@ -12,11 +12,11 @@ package vn.tphcm.notificationservice.services;
  */
 
 import com.rabbitmq.client.Channel;
+import event.dto.NotificationEvent;
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Service;
-import vn.tphcm.notificationservice.contracts.VerificationMessage;
 
 @Service
 public interface EmailService {
-    void sendVerificationEmail(VerificationMessage message, Message amqpMessage, Channel channel) throws Exception;
+    void sendVerificationEmail(NotificationEvent event, Message amqpMessage, Channel channel) throws Exception;
 }

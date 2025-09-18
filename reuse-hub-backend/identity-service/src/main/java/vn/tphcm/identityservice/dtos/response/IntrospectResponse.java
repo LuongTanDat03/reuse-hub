@@ -12,8 +12,6 @@ package vn.tphcm.identityservice.dtos.response;
 
 import lombok.*;
 
-import java.util.List;
-
 @Setter
 @Getter
 @NoArgsConstructor
@@ -21,8 +19,4 @@ import java.util.List;
 @Builder
 public class IntrospectResponse {
     private boolean valid;
-    private String userId;
-    private String username;
-    private List<String> roles;
-    private List<String> permissions;
 }

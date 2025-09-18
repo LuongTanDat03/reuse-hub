@@ -18,8 +18,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import vn.tphcm.profileservice.filter.UserContextFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -38,8 +36,7 @@ public class AppConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request ->
-                        request.anyRequest().permitAll())
-                .addFilterBefore(new UserContextFilter(), UsernamePasswordAuthenticationFilter.class);
+                        request.anyRequest().permitAll());
 
         return httpSecurity.build();
     }

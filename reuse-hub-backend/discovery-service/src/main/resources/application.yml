@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: discovery-service
+  security:
+    user:
+      name: ${EUREKA_USER:admin}
+      password: ${EUREKA_PASSWORD:password}
 
 eureka:
   client:
@@ -11,6 +15,7 @@ eureka:
     fetch-registry: false
   server:
     registry-sync-retry-wait-ms: 0
+    enable-self-preservation: false
 
 management:
   endpoints:
@@ -20,5 +25,5 @@ management:
 
 logging:
   level:
-    root: INFO
-    web: INFO
+    com.netflix.eureka: OFF
+    com.netflix.discovery: OFF

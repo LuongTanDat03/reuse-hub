@@ -10,11 +10,8 @@ package vn.tphcm.identityservice.services.impl;
  * @date: 8/15/2025
  */
 
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -28,22 +25,26 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import vn.tphcm.event.dto.VerificationMessage;
+import vn.tphcm.event.dto.NotificationEvent;
 import vn.tphcm.identityservice.commons.TokenType;
 import vn.tphcm.identityservice.commons.UserStatus;
+import vn.tphcm.identityservice.dtos.ApiResponse;
 import vn.tphcm.identityservice.dtos.request.IntrospectRequest;
 import vn.tphcm.identityservice.dtos.request.LogoutRequest;
 import vn.tphcm.identityservice.dtos.request.SignInRequest;
 import vn.tphcm.identityservice.dtos.request.UserCreationRequest;
 import vn.tphcm.identityservice.dtos.response.IntrospectResponse;
-import vn.tphcm.identityservice.dtos.ApiResponse;
 import vn.tphcm.identityservice.dtos.response.SignInResponse;
 import vn.tphcm.identityservice.dtos.response.UserResponse;
 import vn.tphcm.identityservice.exceptions.InvalidDataException;
 import vn.tphcm.identityservice.exceptions.ResourceNotFoundException;
 import vn.tphcm.identityservice.mapper.ProfileMapper;
 import vn.tphcm.identityservice.mapper.UserMapper;
+import vn.tphcm.identityservice.models.Role;
 import vn.tphcm.identityservice.models.User;
+import vn.tphcm.identityservice.models.UserHasRole;
+import vn.tphcm.identityservice.repositories.RoleRepository;
+import vn.tphcm.identityservice.repositories.UserHasRoleRepository;
 import vn.tphcm.identityservice.repositories.UserRepository;
 import vn.tphcm.identityservice.repositories.client.ProfileClient;
 import vn.tphcm.identityservice.services.AuthenticationService;
@@ -55,6 +56,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -65,6 +67,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class AuthenticationServiceImpl implements AuthenticationService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final UserHasRoleRepository userHasRoleRepository;
+    private final RoleRepository roleRepository;
     private final UserMapper userMapper;
     private final ProfileClient profileClient;
     private final AuthenticationManager authenticationManager;
@@ -76,15 +80,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private static final int TIMEOUT_REDIS = 5 * 60;
     private final ProfileMapper profileMapper;
 
-    @Value("${avatar.default}")
-    private String avatarUrl;
-
     @Override
     public ApiResponse<SignInResponse> getAccessToken(SignInRequest request) {
         log.info("Get Access Token");
 
         List<String> authorities;
-        Optional<User> user = null;
         try {
             log.info("Username: {},Password: {}", request.getUsernameOrEmail(), request.getPassword());
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsernameOrEmail(), request.getPassword()));
@@ -95,12 +95,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .map(Object::toString)
                     .toList());
 
-            user = userRepository.findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail());
-
-            if (user.isEmpty()) {
-                log.error("User not found: {}", request.getUsernameOrEmail());
-                throw new ResourceNotFoundException("User not found");
-            }
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (BadCredentialsException e) {
             log.error("Authentication failed for user: {}", request.getUsernameOrEmail(), e);
@@ -118,6 +113,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         String refreshToken = jwtService.generateRefreshToken(request.getUsernameOrEmail(), authorities);
         log.info("Generated refresh token: {}", refreshToken.substring(0, 7));
+
+        Optional<User> user = userRepository.findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail());
+
+        if (user.isEmpty()) {
+            log.error("User not found: {}", request.getUsernameOrEmail());
+            throw new ResourceNotFoundException("User not found");
+        }
 
         redisTemplate.opsForValue().set("accessToken:" + user.get().getId(), accessToken, Duration.ofDays(7));
         redisTemplate.opsForValue().set("refreshToken:" + user.get().getId(), refreshToken, Duration.ofDays(7));
@@ -171,7 +173,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         try {
             user = userRepository.save(user);
-            log.info("Create user successfully: {}", user.getId());
+            assignDefaultRoleToUser(user);
+            log.info("Create user successfully: {} with Role: {}", user.getId(), user.getRoles());
         } catch (DataIntegrityViolationException e) {
             log.error("Data integrity violation: {}", e.getMessage());
             throw new DataIntegrityViolationException("Username or Email already exists");
@@ -186,20 +189,32 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String verifyCode = generateCode();
 
         // Save verifyCode in Redis with a TTL of 5 minutes
-        String redisKey = "userId:" + user.getId();
+        String redisKey = "verify:userId" + user.getId();
         redisTemplate.opsForValue().set(redisKey, verifyCode, TIMEOUT_REDIS, MINUTES);
         log.info("Stored verifyCode in Redis with key: {}, code: {}", redisKey, verifyCode);
 
-        // Send verification message to RabbitMQ Exchange
-        VerificationMessage message = VerificationMessage.of(user.getEmail(), user.getId(), verifyCode);
+        // Send message to RabbitMQ Exchange
 
-        messageProducer.publishVerificationEmail(message);
+        NotificationEvent event = NotificationEvent.builder()
+                .channel("EMAIL")
+                .recipient(user.getEmail())
+                .subject("Please verify your account")
+                .templateCode("send-email.html")
+                .param(Map.of("verificationCode", verifyCode))
+                .build();
+
+        messageProducer.publishVerificationEmail(event);
         log.info("📨 Verification email message sent for userId={}, email={}", user.getId(), user.getEmail());
 
         var userCreationResponse = userMapper.toUserResponse(user);
         userCreationResponse.setId(profile.getData().getId());
 
-        return ApiResponse.<UserResponse>builder().status(HttpStatus.CREATED.value()).message("User registered successfully, Please check your email to verify your account.").data(userCreationResponse).timestamp(OffsetDateTime.now()).build();
+        return ApiResponse.<UserResponse>builder()
+                .status(HttpStatus.CREATED.value())
+                .message("User registered successfully, Please check your email to verify your account.")
+                .data(userCreationResponse)
+                .timestamp(OffsetDateTime.now())
+                .build();
     }
 
     @Override
@@ -212,6 +227,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         jwtService.deleteToken(accessToken);
         jwtService.deleteToken(refreshToken);
+
+        SecurityContextHolder.clearContext();
 
         return ApiResponse.<Void>builder()
                 .status(HttpStatus.OK.value())
@@ -237,7 +254,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         // Check verification code in Redis
-        String redisKey = "verifyCode:" + userId;
+        String redisKey = "verify:userId" + userId;
         String storedCode = redisTemplate.opsForValue().get(redisKey);
         if (storedCode == null || !storedCode.equals(verificationCode)) {
             log.error("Invalid verification code for user ID: {}", userId);
@@ -260,35 +277,38 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             boolean isTokenValid = jwtService.isTokenValid(request.getToken(), TokenType.ACCESS_TOKEN);
 
+            log.info("Introspect token: {}, is valid: {}", request.getToken().substring(0, 7), isTokenValid);
             if (!isTokenValid) {
-                return ApiResponse.<IntrospectResponse>builder().status(HttpStatus.OK.value()).message("Token is invalid").data(IntrospectResponse.builder().userId(null).username(null).roles(null).permissions(null).valid(false).build()).timestamp(OffsetDateTime.now()).build();
+                return ApiResponse.<IntrospectResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Token is invalid")
+                        .data(IntrospectResponse.builder()
+                                .valid(false)
+                                .build())
+                        .timestamp(OffsetDateTime.now())
+                        .build();
             }
-
-            String userId = jwtService.extractUsername(request.getToken(), TokenType.ACCESS_TOKEN);
-
-            User user = userRepository.findById(userId).orElseThrow(() -> {
-                log.error("User not found with ID: {}", userId);
-                return new ResourceNotFoundException("User not found");
-            });
 
             return ApiResponse.<IntrospectResponse>builder()
                     .status(HttpStatus.OK.value())
                     .message("Token is valid")
                     .data(IntrospectResponse.builder()
-                            .userId(user.getId())
-                            .username(user.getUsername())
-                            .roles(jwtService.extractAuthorities(request.getToken(), TokenType.ACCESS_TOKEN))
-                            .permissions(List.of())
                             .valid(true)
                             .build())
                     .timestamp(OffsetDateTime.now()).build();
         } catch (Exception e) {
             log.error("Error introspecting token: {}", e.getMessage());
-            return ApiResponse.<IntrospectResponse>builder().status(HttpStatus.OK.value()).message("Token is invalid").data(IntrospectResponse.builder().userId(null).username(null).roles(null).permissions(null).valid(false).build()).timestamp(OffsetDateTime.now()).build();
+            return ApiResponse.<IntrospectResponse>builder()
+                    .status(HttpStatus.OK.value())
+                    .message("Token is invalid")
+                    .data(IntrospectResponse.builder()
+                            .valid(false)
+                            .build())
+                    .timestamp(OffsetDateTime.now()).build();
         }
     }
 
-    public String generateCode() {
+    private String generateCode() {
         SecureRandom random = new SecureRandom();
         StringBuilder code = new StringBuilder(CODE_LENGTH);
         for (int i = 0; i < CODE_LENGTH; i++) {
@@ -298,4 +318,26 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return code.toString();
     }
 
+    private void assignDefaultRoleToUser(User user) {
+        if (userHasRoleRepository.existsByUser_IdAndRole_Id(user.getId(), "USER")) {
+            log.info("User already has the default role assigned: {}", user.getId());
+            throw new ResourceNotFoundException("User already has the default role assigned");
+        }
+
+        Optional<Role> role = roleRepository.findByName("USER");
+
+        if (role.isEmpty()) {
+            log.error("Default role 'USER' not found in the database.");
+            throw new ResourceNotFoundException("Default role 'USER' not found");
+        }
+
+        UserHasRole userHasRole = new UserHasRole();
+
+        userHasRole.setUser(user);
+        userHasRole.setRole(role.get());
+
+        userHasRoleRepository.save(userHasRole);
+
+        user.getRoles().add(userHasRole);
+    }
 }

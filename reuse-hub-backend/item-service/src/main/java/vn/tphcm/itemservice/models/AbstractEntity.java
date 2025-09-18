@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 public abstract class AbstractEntity<T> {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, unique = true)
     private T id;
 

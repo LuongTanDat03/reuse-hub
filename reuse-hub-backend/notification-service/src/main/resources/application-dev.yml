@@ -3,6 +3,13 @@ spring:
     activate:
       on-profile: dev
 
+  data:
+    mongodb:
+      uri: mongodb+srv://admin:TlHKQj1Mt0njuaJi@reuse-hub.dn312hs.mongodb.net/?retryWrites=true&w=majority&appName=notification-service
+      database: notification-service
+
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
   rabbitmq:
     host: localhost
     port: 5672
@@ -38,7 +45,6 @@ spring:
           starttls:
             enable: true
 
-
 springdoc:
   api-docs:
     enabled: true
@@ -49,5 +55,5 @@ openapi:
   service:
     api-docs: reuse-hub-api-docs
     server: ${BACKEND_SERVICE:http://localhost:${server.port}}
-    title: reuse-hub
+    title: notification-service
     version: 1.0.0

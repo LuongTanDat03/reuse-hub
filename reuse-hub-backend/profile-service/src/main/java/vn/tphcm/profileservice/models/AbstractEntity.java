@@ -10,30 +10,27 @@ package vn.tphcm.profileservice.models;
  * @date: 8/23/2025
  */
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.neo4j.core.schema.GeneratedValue;
-import org.springframework.data.neo4j.core.schema.Id;
-import org.springframework.data.neo4j.core.schema.Property;
-import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public abstract class AbstractEntity {
+@MappedSuperclass
+public abstract class AbstractEntity<T> {
     @Id
-    @GeneratedValue(generatorClass = UUIDStringGenerator.class)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private T id;
 
-    @CreatedDate
-    @Property("created_at")
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Property("updated_at")
+    @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
 }

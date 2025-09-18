@@ -12,7 +12,6 @@ package vn.tphcm.apigateway.configs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import vn.tphcm.apigateway.dtos.response.ApiResponse;
+import vn.tphcm.apigateway.dtos.ApiResponse;
 import vn.tphcm.apigateway.services.IdentityService;
 
 import java.util.Arrays;
@@ -59,27 +58,20 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        String token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        List<String> authHeaders = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
 
-        if (token == null || !token.startsWith("Bearer ")) {
+        if (CollectionUtils.isEmpty(authHeaders)) {
             return unauthenticated(exchange.getResponse());
         }
 
-        token = token.substring(7);
-        log.info("Token: {}", token);
+        String token = authHeaders.get(0).replace("Bearer ", "");
+
+        log.info("Authorization header: {}", token);
 
         return identityService.introspect(token).flatMap(introspectResponseApiResponse -> {
+            log.info("Introspect response: {}", introspectResponseApiResponse.getData());
             if (introspectResponseApiResponse.getData().isValid()) {
-                ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                        .header("X-User-Id", introspectResponseApiResponse.getData().getUserId())
-                        .header("X-User-Username", introspectResponseApiResponse.getData().getUsername())
-                        .header("X-User-Roles", String.join(",", introspectResponseApiResponse.getData().getRoles() == null ? List.of() : introspectResponseApiResponse.getData().getRoles()))
-                        .header("X-User-Permissions", String.join(",", introspectResponseApiResponse.getData().getPermissions() == null ? List.of() : introspectResponseApiResponse.getData().getPermissions()))
-                        .build();
-
-                return chain.filter(exchange.mutate()
-                        .request(modifiedRequest)
-                        .build());
+                return chain.filter(exchange);
 
             } else {
                 return unauthenticated(exchange.getResponse());
@@ -99,9 +91,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
 
         boolean isPublicEndpoint = Arrays.stream(publicEndpoints).anyMatch(s -> path.matches(apiPrefix + s));
-        
+
         log.info("Path: {} is Public: {}", path, isPublicEndpoint);
-        
+
         return isPublicEndpoint;
     }
 

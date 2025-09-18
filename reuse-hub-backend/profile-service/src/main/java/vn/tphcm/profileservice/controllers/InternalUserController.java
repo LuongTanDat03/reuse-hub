@@ -10,9 +10,9 @@ package vn.tphcm.profileservice.controllers;
  * @date: 9/1/2025
  */
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,19 +24,16 @@ import vn.tphcm.profileservice.services.ProfileService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/profile/internal")
+@RequestMapping("/profile/internal")
 @Slf4j(topic = "INTERNAL-USER-CONTROLLER")
 public class InternalUserController {
-    private final ProfileService userService;
+    private final ProfileService profileService;
 
     @PostMapping("/users")
+    @Operation(summary = "Create user profile", description = "This endpoint allows internal services to create a user profile.")
     public ApiResponse<UserResponse> createProfile(@RequestBody ProfileUserRequest request) {
         log.info("Create profile for user: {}", request);
 
-        return ApiResponse.<UserResponse>builder()
-                .status(HttpStatus.CREATED.value())
-                .message("Create profile successfully")
-                .data(userService.createProfile(request))
-                .build();
+        return profileService.createProfile(request);
     }
 }

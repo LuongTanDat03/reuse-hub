@@ -10,16 +10,12 @@ package vn.tphcm.profileservice.dtos.response;
  * @date: 9/6/2025
  */
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class AddressResponse {
-    private String id;
-
     private String addressId;
 
     private String addressLine;
