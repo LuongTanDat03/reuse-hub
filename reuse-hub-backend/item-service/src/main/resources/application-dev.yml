@@ -4,17 +4,38 @@ spring:
       on-profile: dev
 
   datasource:
-    url: ${DATABASE_URL_ITEM:jdbc:postgresql://localhost:5432/item}
-    username: ${DATABASE_USERNAME_ITEM:postgres}
-    password: ${DATABASE_PASSWORD_ITEM:postgres}
+    url: ${DATABASE_URL_ITEM:jdbc:postgresql://db.yqkprpzfirfqkratjfwz.supabase.co:5432/postgres?sslmode=require}
+    username: ${SUPABASE_DB_USERNAME:postgres}
+    password: ${SUPABASE_DB_PASSWORD:wCGHQt4SrM51u9kM}
+
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        spatial:
+          dialect: org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect
+
+supabase:
+  url: ${SUPABASE_URL:https://yqkprpzfirfqkratjfwz.supabase.co}
+  service-key: ${SUPABASE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa3BycHpmaXJmcWtyYXRqZnd6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTM5Njg1NSwiZXhwIjoyMDc0OTcyODU1fQ.kVXmy235CuOHuh6Mwd6PpDEpajR_YJBZpTQkW9KPylc}
+  bucket: ${SUPABASE_BUCKET:upload-images}
+  public-url: ${SUPABASE_PUBLIC_URL:https://yqkprpzfirfqkratjfwz.storage.supabase.co/storage/v1/object/public}
+
+file:
+  upload:
+    max-size: ${FILE_MAX_SIZE:10}
+    allowed-types: image/jpeg,image/png,image/gif,image/webp
+    max-images: ${MAX_IMAGES:10}
+    image:
+      max-width: ${IMAGE_MAX_WIDTH:1920}
+      max-height: ${IMAGE_MAX_HEIGHT:1080}
+      thumbnail-size: ${THUMBNAIL_WIDTH:300}
+      compress-quality: ${COMPRESS_QUALITY:0.8}
 
 springdoc:
   api-docs:

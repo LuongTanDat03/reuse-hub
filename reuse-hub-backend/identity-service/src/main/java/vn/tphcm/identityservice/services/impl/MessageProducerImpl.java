@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
-import vn.tphcm.event.dto.NotificationEvent;
+import vn.tphcm.event.dto.NotificationMessage;
 import vn.tphcm.identityservice.configs.RabbitMQConfig;
 import vn.tphcm.identityservice.services.MessageProducer;
 
@@ -28,7 +28,7 @@ public class MessageProducerImpl implements MessageProducer {
     private final RabbitTemplate rabbitTemplate;
 
     @Override
-    public void publishVerificationEmail(NotificationEvent event) {
+    public void publishVerificationEmail(NotificationMessage event) {
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE_VERIFICATION,
                 RabbitMQConfig.RK_VERIFICATION_ITEM,

@@ -11,5 +11,5 @@ package vn.tphcm.itemservice.commons;
  */
 
 public enum InteractionType {
-    VIEW, LIKE, COMMENT
+    VIEW, LIKE, COMMENT, SHARE, UNLIKE
 }

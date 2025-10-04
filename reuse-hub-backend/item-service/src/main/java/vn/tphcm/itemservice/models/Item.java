@@ -29,7 +29,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "tbl_item")
+@Table(name = "tbl_items")
 public class Item extends AbstractEntity<String> implements Serializable {
     @Column(name = "user_id", nullable = false)
     private String userId;
@@ -39,22 +39,33 @@ public class Item extends AbstractEntity<String> implements Serializable {
     private String description;
 
     @Column(columnDefinition = "jsonb")
-    private String images;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<String> images = new ArrayList<>();
 
     @Column(columnDefinition = "jsonb")
-    private String tags;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<String> tags = new ArrayList<>();
 
     private String category;
 
     @Column(columnDefinition = "geometry(Point, 4326)")
+    @JdbcTypeCode(SqlTypes.GEOMETRY)
     private Point location;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    private ItemStatus status;
+    private ItemStatus status = ItemStatus.AVAILABLE;
 
-    @Column(name = "view_counts")
-    private int viewCounts;
+    @Column(name = "view_count")
+    private int viewCount;
+
+    @Column(name = "comment_count")
+    private int commentCount;
+
+    @Column(name = "like_count")
+    private int likeCount;
+
+    private Long price;
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ItemInteraction> itemInteractions = new ArrayList<>();

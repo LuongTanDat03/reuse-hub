@@ -26,6 +26,7 @@ public class RabbitMQConfig {
     public static final String Q_NOTIFICATION = "q.notification";
     public static final String Q_NOTIFICATION_DLX = "q.notification.dlx";
     public static final String EXCHANGE_NOTIFICATION_DLX = "ex.notification.dlx";
+
     public static final String EXCHANGE_VERIFICATION = "ex.verification";
     public static final String RK_VERIFICATION_ITEM = "rk.verification.item";
     public static final String Q_VERIFICATION = "q.verification";
@@ -101,13 +102,12 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
-                                         Jackson2JsonMessageConverter messageConverter) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         log.info("Initializing RabbitTemplate with provided ConnectionFactory");
 
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
 
-        rabbitTemplate.setMessageConverter(messageConverter);
+        rabbitTemplate.setMessageConverter(jackson2JsonMessageConverter());
 
         rabbitTemplate.setMandatory(true);
 

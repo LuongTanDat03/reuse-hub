@@ -19,7 +19,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class NotificationEvent {
+public class NotificationMessage {
     private String channel;
     private String recipient;
     private String templateCode;

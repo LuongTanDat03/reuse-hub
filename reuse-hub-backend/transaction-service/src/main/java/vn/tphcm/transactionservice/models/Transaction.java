@@ -27,7 +27,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Entity
 @Table(name = "tbl_transaction")
-public class Transaction extends AbstractEntity<Long> implements Serializable {
+public class Transaction extends AbstractEntity<String> implements Serializable {
     @Column(name = "item_id", nullable = false)
     private Long itemId;
 

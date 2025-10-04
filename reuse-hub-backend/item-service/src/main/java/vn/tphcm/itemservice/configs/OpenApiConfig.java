@@ -4,7 +4,7 @@
  * Copyright (c) 2025. All rights reserved.
  */
 
-package vn.tphcm.profileservice.configs;
+package vn.tphcm.itemservice.configs;
 
 /*
  * @author: Luong Tan Dat
@@ -34,7 +34,7 @@ public class OpenApiConfig {
     public GroupedOpenApi publicApi(@Value("${openapi.service.api-docs}") String apiDocs) {
         return GroupedOpenApi.builder()
                 .group(apiDocs)
-                .packagesToScan("vn.tphcm.profileservice.controller")
+                .packagesToScan("vn.tphcm.itemservice.controller")
                 .build();
     }
 

@@ -12,9 +12,9 @@ package vn.tphcm.identityservice.services;
  */
 
 import org.springframework.stereotype.Service;
-import vn.tphcm.event.dto.NotificationEvent;
+import vn.tphcm.event.dto.NotificationMessage;
 
 @Service
 public interface MessageProducer {
-    void publishVerificationEmail(NotificationEvent event);
+    void publishVerificationEmail(NotificationMessage event);
 }

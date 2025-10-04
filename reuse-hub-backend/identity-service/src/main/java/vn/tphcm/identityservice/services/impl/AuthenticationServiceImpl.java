@@ -25,7 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import vn.tphcm.event.dto.NotificationEvent;
+import vn.tphcm.event.dto.NotificationMessage;
 import vn.tphcm.identityservice.commons.TokenType;
 import vn.tphcm.identityservice.commons.UserStatus;
 import vn.tphcm.identityservice.dtos.ApiResponse;
@@ -182,8 +182,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         var profileRequest = profileMapper.toRegisterRequest(request);
         profileRequest.setUserId(user.getId());
-
-        var profile = profileClient.createProfile(profileRequest);
+        profileClient.createProfile(profileRequest);
 
         // Generate verification code
         String verifyCode = generateCode();
@@ -195,7 +194,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         // Send message to RabbitMQ Exchange
 
-        NotificationEvent event = NotificationEvent.builder()
+        NotificationMessage event = NotificationMessage.builder()
                 .channel("EMAIL")
                 .recipient(user.getEmail())
                 .subject("Please verify your account")
@@ -206,13 +205,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         messageProducer.publishVerificationEmail(event);
         log.info("📨 Verification email message sent for userId={}, email={}", user.getId(), user.getEmail());
 
-        var userCreationResponse = userMapper.toUserResponse(user);
-        userCreationResponse.setId(profile.getData().getId());
-
         return ApiResponse.<UserResponse>builder()
                 .status(HttpStatus.CREATED.value())
                 .message("User registered successfully, Please check your email to verify your account.")
-                .data(userCreationResponse)
+                .data(userMapper.toUserResponse(user))
                 .timestamp(OffsetDateTime.now())
                 .build();
     }
