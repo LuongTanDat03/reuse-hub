@@ -4,9 +4,9 @@ spring:
       on-profile: dev
 
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/profile}
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:postgres}
+    url: ${DATABASE_URL_ITEM:jdbc:postgresql://localhost:5432/profile}
+    username: ${SUPABASE_DB_USERNAME:postgres}
+    password: ${SUPABASE_DB_PASSWORD:postgres}
   jpa:
     hibernate:
       ddl-auto: none
@@ -14,14 +14,30 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        spatial:
+          dialect: org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect
 
-aws:
-  s3:
-    bucket-name: ${AWS_S3_BUCKET_NAME:reuse-hub-images}
-    region: ${AWS_REGION:ap-southeast-1}
-    access-key: ${AWS_ACCESS_KEY_ID:admin}
-    secret-key: ${AWS_SECRET_ACCESS_KEY:password}
-    base-url: https://${aws.s3.bucket-name}.s3.${aws.s3.region}.amazonaws.com
+supabase:
+  url: ${SUPABASE_URL:https://gpkseonjcemtkylobsfq.supabase.co}
+  service-key: ${SUPABASE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdwa3Nlb25qY2VtdGt5bG9ic2ZxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTYxODE3MSwiZXhwIjoyMDc1MTk0MTcxfQ.XBZiLqY1BYPi27ZCpZ6GRkC3G8ZGkT63B1iMy0klxe8}
+  bucket: ${SUPABASE_BUCKET:upload-images}
+  public-url: ${SUPABASE_PUBLIC_URL:https://gpkseonjcemtkylobsfq.storage.supabase.co/storage/v1/object/public}
+
+file:
+  upload:
+    max-size: ${FILE_MAX_SIZE:10}
+    allowed-types: image/jpeg,image/png,image/gif,image/webp
+    max-images: ${MAX_IMAGES:10}
+    image:
+      max-width: ${IMAGE_MAX_WIDTH:1920}
+      max-height: ${IMAGE_MAX_HEIGHT:1080}
+      thumbnail-size: ${THUMBNAIL_WIDTH:300}
+      compress-quality: ${COMPRESS_QUALITY:0.8}
+
+avatar:
+  default: https://i.ibb.co/mrL8wYRs/default.jpg
+
 springdoc:
   api-docs:
     enabled: true

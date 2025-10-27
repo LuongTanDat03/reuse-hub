@@ -11,5 +11,5 @@ package vn.tphcm.itemservice.commons;
  */
 
 public enum ItemStatus {
-    AVAILABLE, RESERVED, EXCHANGED, DELETED
+    AVAILABLE, RESERVED, EXCHANGED, DELETED, SOLD
 }

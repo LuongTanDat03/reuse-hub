@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Github Secret ###
+chat-service/src/main/resources/application-dev.yml

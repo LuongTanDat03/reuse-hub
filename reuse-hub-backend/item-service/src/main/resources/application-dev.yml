@@ -4,10 +4,31 @@ spring:
       on-profile: dev
 
   datasource:
-    url: ${DATABASE_URL_ITEM:jdbc:postgresql://db.yqkprpzfirfqkratjfwz.supabase.co:5432/postgres?sslmode=require}
+    url: ${DATABASE_URL_ITEM:jdbc:postgresql://localhost:5432/item}
     username: ${SUPABASE_DB_USERNAME:postgres}
-    password: ${SUPABASE_DB_PASSWORD:wCGHQt4SrM51u9kM}
+    password: ${SUPABASE_DB_PASSWORD:postgres}
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual # publisher-returns: message unacknowledged
+        concurrency: 2 # many consumers for one queue
+        max-concurrency: 10 # max number of consumers for one queue
+        prefetch: 5 # number of messages to prefetch
+        shutdown-timeout: 10s
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          max-interval: 10000ms
+          multiplier: 2.0
+        default-requeue-rejected: false # if false, message will be sent to dead-letter queue
 
   jpa:
     hibernate:
@@ -21,10 +42,10 @@ spring:
           dialect: org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect
 
 supabase:
-  url: ${SUPABASE_URL:https://yqkprpzfirfqkratjfwz.supabase.co}
-  service-key: ${SUPABASE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa3BycHpmaXJmcWtyYXRqZnd6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTM5Njg1NSwiZXhwIjoyMDc0OTcyODU1fQ.kVXmy235CuOHuh6Mwd6PpDEpajR_YJBZpTQkW9KPylc}
+  url: ${SUPABASE_URL:https://yrtipbmujtikijomslgm.supabase.co}
+  service-key: ${SUPABASE_SERVICE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlydGlwYm11anRpa2lqb21zbGdtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDUxODkxNiwiZXhwIjoyMDc2MDk0OTE2fQ.bnwZxeVsIJWhkRyL7K9usaDkjmsp088EYf_ap0DVJhM}
   bucket: ${SUPABASE_BUCKET:upload-images}
-  public-url: ${SUPABASE_PUBLIC_URL:https://yqkprpzfirfqkratjfwz.storage.supabase.co/storage/v1/object/public}
+  public-url: ${SUPABASE_PUBLIC_URL:https://yrtipbmujtikijomslgm.storage.supabase.co/storage/v1/object/public}
 
 file:
   upload:

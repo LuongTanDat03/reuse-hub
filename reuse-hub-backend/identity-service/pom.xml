@@ -192,7 +192,6 @@
             <scope>provided</scope>
         </dependency>
 
-
         <!-- OpenFeign -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

@@ -34,8 +34,6 @@ public class ProfileUpdateRequest {
 
     private LocalDate birthday;
 
-    private String avatarUrl;
-
     private double ratingAverage;
 
     private int ratingCount;

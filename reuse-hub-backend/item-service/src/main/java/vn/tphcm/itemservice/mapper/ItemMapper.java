@@ -20,7 +20,6 @@ import vn.tphcm.itemservice.dtos.request.ItemCreationRequest;
 import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
 import vn.tphcm.itemservice.dtos.request.LocationRequest;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
-import vn.tphcm.itemservice.dtos.response.ItemSummaryResponse;
 import vn.tphcm.itemservice.dtos.response.LocationResponse;
 import vn.tphcm.itemservice.models.Item;
 
@@ -41,8 +40,6 @@ public interface ItemMapper {
 
     @Mapping(target = "location", source = "location", qualifiedByName = "pointToLocationResponse")
     ItemResponse toResponse(Item item);
-
-    ItemSummaryResponse toSummaryResponse(Item item);
     
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)

@@ -22,14 +22,19 @@ import vn.tphcm.itemservice.commons.ItemStatus;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "tbl_items")
+@Table(name = "tbl_items", indexes = {
+        @Index(name = "idx_items_user_id", columnList = "user_id"),
+        @Index(name = "idx_items_status", columnList = "status")
+})
 public class Item extends AbstractEntity<String> implements Serializable {
     @Column(name = "user_id", nullable = false)
     private String userId;
@@ -66,6 +71,12 @@ public class Item extends AbstractEntity<String> implements Serializable {
     private int likeCount;
 
     private Long price;
+
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ItemComment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ItemRating> ratings = new ArrayList<>();
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ItemInteraction> itemInteractions = new ArrayList<>();

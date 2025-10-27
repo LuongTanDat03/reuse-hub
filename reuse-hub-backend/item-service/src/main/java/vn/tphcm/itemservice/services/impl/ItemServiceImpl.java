@@ -27,15 +27,17 @@ import vn.tphcm.itemservice.dtos.ApiResponse;
 import vn.tphcm.itemservice.dtos.request.ItemCreationRequest;
 import vn.tphcm.itemservice.dtos.request.ItemSearchRequest;
 import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
+import vn.tphcm.itemservice.dtos.response.CommentResponse;
 import vn.tphcm.itemservice.dtos.response.ImageUploadResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
-import vn.tphcm.itemservice.dtos.response.ItemSummaryResponse;
 import vn.tphcm.itemservice.exceptions.InvalidDataException;
 import vn.tphcm.itemservice.exceptions.ResourceNotFoundException;
 import vn.tphcm.itemservice.mapper.ItemMapper;
 import vn.tphcm.itemservice.models.Item;
 import vn.tphcm.itemservice.models.ItemInteraction;
+import vn.tphcm.itemservice.repositories.ItemCommentRepository;
 import vn.tphcm.itemservice.repositories.ItemInteractionRepository;
+import vn.tphcm.itemservice.repositories.ItemRatingRepository;
 import vn.tphcm.itemservice.repositories.ItemRepository;
 import vn.tphcm.itemservice.services.CacheService;
 import vn.tphcm.itemservice.services.ItemService;
@@ -43,10 +45,7 @@ import vn.tphcm.itemservice.services.MessageProducer;
 import vn.tphcm.itemservice.services.SupabaseStorageService;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
@@ -61,8 +60,11 @@ public class ItemServiceImpl implements ItemService {
     private final CacheService cacheService;
     private final MessageProducer messageProducer;
     private final SupabaseStorageService storageService;
+    private final ItemRatingRepository itemRatingRepository;
+    private final ItemCommentRepository itemCommentRepository;
 
     @Override
+    @Transactional
     public ApiResponse<ItemResponse> createItem(ItemCreationRequest request, String userId, List<MultipartFile> images) {
         log.info("Creating item for userId: {}", userId);
 
@@ -71,15 +73,9 @@ public class ItemServiceImpl implements ItemService {
         item.setViewCount(0);
         item.setLikeCount(0);
         item.setCommentCount(0);
-        if (images != null && !images.isEmpty()) {
-            List<ImageUploadResponse> imageUrls = storageService.uploadImages(images, "/images");
-
-            List<String> urls = imageUrls.stream()
-                    .map(ImageUploadResponse::getImageUrl)
-                    .toList();
-
-            item.setImages(urls);
-        }
+        item.setComments(new ArrayList<>());
+        item.setRatings(new ArrayList<>());
+        setImagesUrl(item, images);
 
         Item savedItem = itemRepository.save(item);
         ItemResponse itemResponse = itemMapper.toResponse(savedItem);
@@ -104,7 +100,6 @@ public class ItemServiceImpl implements ItemService {
 
         messageProducer.publishItemEvent(event);
 
-
         return ApiResponse.<ItemResponse>builder()
                 .status(CREATED.value())
                 .message("Item created successfully")
@@ -125,15 +120,7 @@ public class ItemServiceImpl implements ItemService {
 
         itemMapper.updateItem(item, request);
 
-        if (images != null && !images.isEmpty()) {
-            List<ImageUploadResponse> imageUrls = storageService.uploadImages(images, "/images");
-
-            List<String> urls = imageUrls.stream()
-                    .map(ImageUploadResponse::getImageUrl)
-                    .toList();
-
-            item.setImages(urls);
-        }
+        setImagesUrl(item, images);
 
         Item savedItem = itemRepository.save(item);
 
@@ -209,13 +196,12 @@ public class ItemServiceImpl implements ItemService {
             publishViewCount(cachedItem, currentUserId);
 
             return ApiResponse.<ItemResponse>builder()
-                    .message("Item fetched successfully")
+                    .message("Item fetched by Id successfully")
                     .status(OK.value())
                     .data(cachedItem)
                     .timestamp(OffsetDateTime.now())
                     .build();
         }
-
 
         if (currentUserId != null && !item.getUserId().equals(currentUserId)) {
             log.info("Incrementing view count for item with id: {}", itemId);
@@ -250,17 +236,7 @@ public class ItemServiceImpl implements ItemService {
                     .timestamp(OffsetDateTime.now())
                     .build();
         }
-
-        ItemInteraction itemInteraction = new ItemInteraction();
-
-        itemInteraction.setUserId(userId);
-
-        itemInteraction.setItem(item);
-
-        itemInteraction.setInteractionType(InteractionType.LIKE);
-
-        itemInteractionRepository.save(itemInteraction);
-
+        createInteractionIfNotExists(item, userId, InteractionType.LIKE);
         item.setLikeCount(item.getLikeCount() + 1);
         itemRepository.save(item);
 
@@ -304,9 +280,9 @@ public class ItemServiceImpl implements ItemService {
     public ApiResponse<Void> unlikeItem(String itemId, String userId) {
         Item item = getItemIfExists(itemId);
 
-        Optional<ItemInteraction> existingLike = itemInteractionRepository.findByItemAndUserIdAndInteractionType(item, userId, InteractionType.UNLIKE);
+        Optional<ItemInteraction> existingUnlike = itemInteractionRepository.findByItemAndUserIdAndInteractionType(item, userId, InteractionType.UNLIKE);
 
-        if (existingLike.isPresent()) {
+        if (existingUnlike.isPresent()) {
             return ApiResponse.<Void>builder()
                     .status(OK.value())
                     .message("You have already unliked this item")
@@ -314,17 +290,7 @@ public class ItemServiceImpl implements ItemService {
                     .build();
         }
 
-        itemInteractionRepository.delete(existingLike.get());
-
-        ItemInteraction itemInteraction = new ItemInteraction();
-
-        itemInteraction.setUserId(userId);
-
-        itemInteraction.setItem(item);
-
-        itemInteraction.setInteractionType(InteractionType.UNLIKE);
-
-        itemInteractionRepository.save(itemInteraction);
+        createInteractionIfNotExists(item, userId, InteractionType.UNLIKE);
 
         item.setLikeCount(Math.max(0, item.getLikeCount() - 1));
         itemRepository.save(item);
@@ -366,15 +332,15 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ApiResponse<Page<ItemSummaryResponse>> getAllItems(int pageNo, int pageSize, String sortBy, String sortDirection) {
+    public ApiResponse<Page<ItemResponse>> getAllItems(int pageNo, int pageSize, String sortBy, String sortDirection) {
         log.info("Fetching all items with pageNo: {}, pageSize: {}, sortBy: {}, sortDirection: {}", pageNo, pageSize, sortBy, sortDirection);
 
-        Page<ItemSummaryResponse> cachedItems = cacheService.getCachedAllItems(pageNo, pageSize, sortBy, sortDirection);
+        Page<ItemResponse> cachedItems = cacheService.getCachedAllItems(pageNo, pageSize, sortBy, sortDirection);
 
         if (cachedItems != null && !cachedItems.isEmpty()) {
             log.info("Returning cached all items");
 
-            return ApiResponse.<Page<ItemSummaryResponse>>builder()
+            return ApiResponse.<Page<ItemResponse>>builder()
                     .status(OK.value())
                     .message("All item fetched successfully")
                     .data(cachedItems)
@@ -386,11 +352,11 @@ public class ItemServiceImpl implements ItemService {
 
         Page<Item> itemsPage = itemRepository.findByStatus(ItemStatus.AVAILABLE, pageable);
 
-        Page<ItemSummaryResponse> responsePage = itemsPage.map(itemMapper::toSummaryResponse);
+        Page<ItemResponse> responsePage = itemsPage.map(itemMapper::toResponse);
 
         cacheService.cacheAllItems(pageNo, pageSize, sortBy, sortDirection, responsePage);
 
-        return ApiResponse.<Page<ItemSummaryResponse>>builder()
+        return ApiResponse.<Page<ItemResponse>>builder()
                 .status(OK.value())
                 .message("All item fetched successfully")
                 .data(responsePage)
@@ -399,15 +365,15 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ApiResponse<Page<ItemSummaryResponse>> getMyItem(String userId, int pageNo, int pageSize, String sortBy, String sortDirection) {
+    public ApiResponse<Page<ItemResponse>> getMyItem(String userId, int pageNo, int pageSize, String sortBy, String sortDirection) {
         log.info("Fetching items for userId: {} with pageNo: {}, pageSize: {}, sortBy: {}, sortDirection: {}", userId, pageNo, pageSize, sortBy, sortDirection);
 
-        Page<ItemSummaryResponse> cachedItems = cacheService.getCachedUserItems(userId, pageNo, pageSize, sortBy, sortDirection);
+        Page<ItemResponse> cachedItems = cacheService.getCachedUserItems(userId, pageNo, pageSize, sortBy, sortDirection);
 
         if (cachedItems != null && cachedItems.hasContent()) {
             log.info("Returning cached items for userId: {}", userId);
 
-            return ApiResponse.<Page<ItemSummaryResponse>>builder()
+            return ApiResponse.<Page<ItemResponse>>builder()
                     .status(OK.value())
                     .message("My items fetched successfully")
                     .data(cachedItems)
@@ -419,13 +385,13 @@ public class ItemServiceImpl implements ItemService {
 
         Page<Item> itemsPage = itemRepository.findByUserIdAndStatusNot(userId, ItemStatus.DELETED, pageable);
 
-        Page<ItemSummaryResponse> responsePage = itemsPage.map(itemMapper::toSummaryResponse);
+        Page<ItemResponse> responsePage = itemsPage.map(itemMapper::toResponse);
 
         if (responsePage.hasContent()) {
             cacheService.cacheUserItems(userId, responsePage, pageNo, pageSize, sortBy, sortDirection);
         }
 
-        return ApiResponse.<Page<ItemSummaryResponse>>builder()
+        return ApiResponse.<Page<ItemResponse>>builder()
                 .status(OK.value())
                 .message("My items fetched successfully")
                 .data(responsePage)
@@ -434,31 +400,31 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ApiResponse<Page<ItemSummaryResponse>> searchItems(ItemSearchRequest request, int pageNo, int pageSize, String sortBy, String sortDirection) {
+    public ApiResponse<Page<ItemResponse>> searchItems(ItemSearchRequest request, int pageNo, int pageSize, String sortBy, String sortDirection) {
         log.info("Searching items with keyword: {}", request.getKeyword());
 
         Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
 
         Page<Item> items = itemRepository.findByKeywordAndStatus(request.getKeyword(), ItemStatus.AVAILABLE, pageable);
 
-        return ApiResponse.<Page<ItemSummaryResponse>>builder()
+        return ApiResponse.<Page<ItemResponse>>builder()
                 .status(OK.value())
                 .message("Items searched successfully")
-                .data(items.map(itemMapper::toSummaryResponse))
+                .data(items.map(itemMapper::toResponse))
                 .timestamp(OffsetDateTime.now())
                 .build();
     }
 
     @Override
-    public ApiResponse<Page<ItemSummaryResponse>> getPopularItems(int pageNo, int pageSize, String sortBy, String sortDirection) {
+    public ApiResponse<Page<ItemResponse>> getPopularItems(int pageNo, int pageSize, String sortBy, String sortDirection) {
         log.info("Fetching popular items with pageNo: {}, pageSize: {}, sortBy: {}, sortDirection: {}", pageNo, pageSize, sortBy, sortDirection);
 
-        Page<ItemSummaryResponse> cachedItems = cacheService.getCachedPopularItems();
+        Page<ItemResponse> cachedItems = cacheService.getCachedPopularItems();
 
         if (cachedItems != null && !cachedItems.isEmpty()) {
             log.info("Returning cached popular items");
 
-            return ApiResponse.<Page<ItemSummaryResponse>>builder()
+            return ApiResponse.<Page<ItemResponse>>builder()
                     .status(OK.value())
                     .message("Popular items fetched successfully")
                     .data(cachedItems)
@@ -470,11 +436,11 @@ public class ItemServiceImpl implements ItemService {
 
         Page<Item> itemsPage = itemRepository.findPopularItemsByStatus(ItemStatus.AVAILABLE, pageable);
 
-        Page<ItemSummaryResponse> responses = itemsPage.map(itemMapper::toSummaryResponse);
+        Page<ItemResponse> responses = itemsPage.map(itemMapper::toResponse);
 
         cacheService.cachePopularItems(responses);
 
-        return ApiResponse.<Page<ItemSummaryResponse>>builder()
+        return ApiResponse.<Page<ItemResponse>>builder()
                 .status(OK.value())
                 .message("Popular items fetched successfully")
                 .data(responses)
@@ -483,22 +449,71 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ApiResponse<Page<ItemSummaryResponse>> getItemsByCategory(String category, int pageNo, int pageSize, String sortBy, String sortDirection) {
+    public ApiResponse<Page<ItemResponse>> getItemsByCategory(String category, int pageNo, int pageSize, String sortBy, String sortDirection) {
         log.info("Fetching items by category: {} with pageNo: {}, pageSize: {}, sortBy: {}, sortDirection: {}", category, pageNo, pageSize, sortBy, sortDirection);
 
         Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
 
         Page<Item> itemsPage = itemRepository.findByCategoryAndStatus(category, ItemStatus.AVAILABLE, pageable);
 
-        Page<ItemSummaryResponse> responsePage = itemsPage.map(itemMapper::toSummaryResponse);
+        Page<ItemResponse> responsePage = itemsPage.map(itemMapper::toResponse);
 
-        return ApiResponse.<Page<ItemSummaryResponse>>builder()
+        return ApiResponse.<Page<ItemResponse>>builder()
                 .status(OK.value())
                 .message("Items fetched successfully")
                 .data(responsePage)
                 .timestamp(OffsetDateTime.now())
                 .build();
     }
+
+    @Override
+    public ApiResponse<Page<ItemResponse>> getItemComments(String itemId, int pageNo, int pageSize) {
+
+
+        return null;
+    }
+
+    @Override
+    public ApiResponse<ItemResponse> submitItemFeedback(String itemId, String userId, int rating, String comment) {
+        Item item = getItemIfExists(itemId);
+
+
+
+        return ApiResponse.<ItemResponse>builder()
+                .status(OK.value())
+                .data()
+                .message("Item feedback submitted successfully")
+                .build();
+    }
+
+    @Override
+    public ApiResponse<ItemResponse> getItemFeignById(String itemId) {
+        Item item = getItemIfExists(itemId);
+
+        return ApiResponse.<ItemResponse>builder()
+                .status(OK.value())
+                .message("Item fetched successfully")
+                .data(itemMapper.toResponse(item))
+                .timestamp(OffsetDateTime.now())
+                .build();
+    }
+
+    @Override
+    public ApiResponse<ItemResponse> updateItemStatusFeign(String itemId, ItemStatus status) {
+        Item item = getItemIfExists(itemId);
+
+        item.setStatus(status);
+        itemRepository.save(item);
+
+        return ApiResponse.<ItemResponse>builder()
+                .status(OK.value())
+                .message("Item status updated successfully")
+                .data(itemMapper.toResponse(item))
+                .timestamp(OffsetDateTime.now())
+                .build();
+    }
+
+
 
     private Item getItemIfExists(String itemId) {
         log.info("Fetching item with id: {}", itemId);
@@ -510,15 +525,11 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private void createInteractionIfNotExists(Item item, String userId, InteractionType type) {
-        Optional<ItemInteraction> itemInteraction = itemInteractionRepository.findByItemAndUserIdAndInteractionType(item, userId, type);
-
-        if (itemInteraction.isEmpty()) {
-            ItemInteraction interaction = new ItemInteraction();
-            interaction.setItem(item);
-            interaction.setUserId(userId);
-            interaction.setInteractionType(type);
-            itemInteractionRepository.save(interaction);
-        }
+        ItemInteraction interaction = new ItemInteraction();
+        interaction.setItem(item);
+        interaction.setUserId(userId);
+        interaction.setInteractionType(type);
+        itemInteractionRepository.save(interaction);
     }
 
     private void publishViewCount(ItemResponse response, String currentUserId) {
@@ -563,5 +574,17 @@ public class ItemServiceImpl implements ItemService {
         cacheService.evictAllUserItems(userId);
         cacheService.evictAllItems();
         cacheService.evictCachedPopularItems();
+    }
+
+    private void setImagesUrl(Item item, List<MultipartFile> images) {
+        if (images != null && !images.isEmpty()) {
+            List<ImageUploadResponse> imageUrls = storageService.uploadImages(images, "/images");
+
+            List<String> urls = imageUrls.stream()
+                    .map(ImageUploadResponse::getImageUrl)
+                    .toList();
+
+            item.setImages(urls);
+        }
     }
 }

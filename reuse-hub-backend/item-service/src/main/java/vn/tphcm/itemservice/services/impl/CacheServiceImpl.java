@@ -18,11 +18,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
-import vn.tphcm.itemservice.dtos.response.ItemSummaryResponse;
 import vn.tphcm.itemservice.services.CacheService;
 
 import java.time.Duration;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -80,7 +78,7 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public void cachePopularItems(Page<ItemSummaryResponse> items) {
+    public void cachePopularItems(Page<ItemResponse> items) {
         try {
             redisTemplate.opsForValue().set(POPULAR_ITEMS_KEY, items, POPULAR_ITEMS_TTL);
             log.info("Cached popular items with key {}", POPULAR_ITEMS_KEY);
@@ -90,12 +88,12 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public Page<ItemSummaryResponse> getCachedPopularItems() {
+    public Page<ItemResponse> getCachedPopularItems() {
         try {
             Object cached = redisTemplate.opsForValue().get(POPULAR_ITEMS_KEY);
             if (cached != null) {
                 log.info("Cache hit for popular items with key {}", POPULAR_ITEMS_KEY);
-                return objectMapper.convertValue(cached, new TypeReference<Page<ItemSummaryResponse>>() {});
+                return objectMapper.convertValue(cached, new TypeReference<Page<ItemResponse>>() {});
             }
         } catch (Exception e) {
             log.error("Failed to get cached popular items: {}", e.getMessage());
@@ -119,7 +117,7 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public void cacheUserItems(String userId, Page<ItemSummaryResponse> items, int page, int size, String sortBy, String sortDirection) {
+    public void cacheUserItems(String userId, Page<ItemResponse> items, int page, int size, String sortBy, String sortDirection) {
         try {
             String key = generateUserItemsKey(userId, page, size, sortBy, sortDirection);
             redisTemplate.opsForValue().set(key, items, DEFAULT_TTL);
@@ -131,13 +129,13 @@ public class CacheServiceImpl implements CacheService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Page<ItemSummaryResponse> getCachedUserItems(String userId, int page, int size, String sortBy, String sortDirection) {
+    public Page<ItemResponse> getCachedUserItems(String userId, int page, int size, String sortBy, String sortDirection) {
         try {
             String key = generateUserItemsKey(userId, page, size, sortBy, sortDirection);
             Object cached = redisTemplate.opsForValue().get(key);
             if (cached != null) {
                 log.info("Cache hit for user {} items with key {}", userId, key);
-                return objectMapper.convertValue(cached, new TypeReference<Page<ItemSummaryResponse>>() {
+                return objectMapper.convertValue(cached, new TypeReference<Page<ItemResponse>>() {
                 });
             }
         } catch (Exception e) {
@@ -171,7 +169,7 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public void cacheAllItems(int page, int size, String sortBy, String sortDirection, Page<ItemSummaryResponse> items) {
+    public void cacheAllItems(int page, int size, String sortBy, String sortDirection, Page<ItemResponse> items) {
         try {
             String key = generateAllItemsKey(page, size, sortBy, sortDirection);
             redisTemplate.opsForValue().set(key, items, LIST_TTL);
@@ -182,13 +180,13 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public Page<ItemSummaryResponse> getCachedAllItems(int page, int size, String sortBy, String sortDirection) {
+    public Page<ItemResponse> getCachedAllItems(int page, int size, String sortBy, String sortDirection) {
         try {
             String key = generateAllItemsKey(page, size, sortBy, sortDirection);
             Object cached = redisTemplate.opsForValue().get(key);
             if (cached != null) {
                 log.info("Cache hit for all items with key {}", key);
-                return objectMapper.convertValue(cached, new TypeReference<Page<ItemSummaryResponse>>() {
+                return objectMapper.convertValue(cached, new TypeReference<Page<ItemResponse>>() {
                 });
             }
         } catch (Exception e) {

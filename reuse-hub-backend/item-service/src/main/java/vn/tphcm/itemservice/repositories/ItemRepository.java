@@ -19,6 +19,8 @@ import org.springframework.stereotype.Repository;
 import vn.tphcm.itemservice.commons.ItemStatus;
 import vn.tphcm.itemservice.models.Item;
 
+import java.util.Optional;
+
 @Repository
 public interface ItemRepository extends JpaRepository<Item, String> {
     Page<Item> findByUserIdAndStatusNot(String userId, ItemStatus status, Pageable pageable);
@@ -38,6 +40,4 @@ public interface ItemRepository extends JpaRepository<Item, String> {
             "WHERE i.status = :status " +
             "ORDER BY i.viewCount DESC")
     Page<Item> findPopularItemsByStatus(ItemStatus status, Pageable pageable);
-
-
 }

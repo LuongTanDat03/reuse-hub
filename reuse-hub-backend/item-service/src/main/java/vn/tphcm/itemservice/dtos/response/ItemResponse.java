@@ -48,4 +48,7 @@ public class ItemResponse {
 
     private int likeCount;
 
+    private List<CommentResponse> comments;
+
+    private List<RatingResponse> ratings;
 }

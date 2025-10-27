@@ -189,6 +189,14 @@
             <artifactId>imgscalr-lib</artifactId>
             <version>${imgscalr.version}</version>
         </dependency>
+
+        <!-- OpenFeign -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
+
     </dependencies>
     <profiles>
         <profile>

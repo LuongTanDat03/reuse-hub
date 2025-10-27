@@ -46,7 +46,7 @@ import vn.tphcm.identityservice.models.UserHasRole;
 import vn.tphcm.identityservice.repositories.RoleRepository;
 import vn.tphcm.identityservice.repositories.UserHasRoleRepository;
 import vn.tphcm.identityservice.repositories.UserRepository;
-import vn.tphcm.identityservice.repositories.client.ProfileClient;
+import vn.tphcm.identityservice.client.ProfileClient;
 import vn.tphcm.identityservice.services.AuthenticationService;
 import vn.tphcm.identityservice.services.JwtService;
 import vn.tphcm.identityservice.services.MessageProducer;

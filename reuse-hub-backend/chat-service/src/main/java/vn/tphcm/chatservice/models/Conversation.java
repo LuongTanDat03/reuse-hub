@@ -10,18 +10,20 @@ package vn.tphcm.chatservice.models;
  * @date: 8/25/2025
  */
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
 import org.bson.types.ObjectId;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import vn.tphcm.chatservice.commons.ConversationStatus;
-import vn.tphcm.chatservice.commons.ConversationType;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,23 +33,15 @@ import java.util.Map;
 @AllArgsConstructor
 @Document(collection = "conversations")
 @Builder
+@CompoundIndex(name = "uniq_participants_idx", def = "{'participants': 1}", unique = true, sparse = true)
 public class Conversation extends AbstractEntity<ObjectId> implements Serializable {
 
-    @Column(name = "owner_id")
-    private Long ownerId;
+    @Indexed(unique = true)
+    private List<String> participants;
 
-    @Column(name = "deputies")
-    private List<Long> deputies;
-
-    @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    private ConversationType type;
-
-    private String name;
-
-    private String avatar;
-
-    private List<String> members;
+    @Indexed(unique = true)
+    @Column(name = "participants_key", unique = true)
+    private String participantsKey;
 
     @Column(name = "last_message_id")
     private String lastMessageId;
@@ -59,8 +53,6 @@ public class Conversation extends AbstractEntity<ObjectId> implements Serializab
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ConversationStatus status;
 
-    private Map<String, String> views;
-
     @Column(name = "pinned_messages")
     private List<String> pinnedMessages;
 
@@ -69,7 +61,4 @@ public class Conversation extends AbstractEntity<ObjectId> implements Serializab
 
     @Column(name = "notification_settings")
     private Map<String, Boolean> notificationSettings;
-
-    @Column(name = "read_by")
-    private Map<Long, String> readBy = new HashMap<>();
 }

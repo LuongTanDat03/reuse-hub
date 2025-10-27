@@ -12,6 +12,12 @@ package vn.tphcm.transactionservice.commons;
 
 public enum TransactionStatus {
     PENDING,
+    CONFIRMED,
+    PAYMENT_PENDING,
+    PAYMENT_COMPLETED,
+    IN_DELIVERY,
+    DELIVERY,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
+    REFUNDED
 }

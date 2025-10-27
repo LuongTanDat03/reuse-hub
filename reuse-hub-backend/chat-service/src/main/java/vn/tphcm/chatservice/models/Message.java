@@ -10,7 +10,9 @@ package vn.tphcm.chatservice.models;
  * @date: 8/25/2025
  */
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +20,7 @@ import lombok.Setter;
 import org.bson.types.ObjectId;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import vn.tphcm.chatservice.commons.MessageStatus;
 import vn.tphcm.chatservice.commons.MessageType;
@@ -33,20 +36,20 @@ import java.util.List;
 @AllArgsConstructor
 @Document(collection = "messages")
 public class Message extends AbstractEntity<ObjectId> implements Serializable {
-
     @Column(name = "conversation_id")
+    @Indexed
     private String conversationId;
 
     @Column(name = "sender_id")
-    private Long senderId;
+    @Indexed
+    private String senderId;
 
     private String content;
 
+    private String contentBeforeEditOrDelete;
+
     @Column(name = "reply_to_message_id")
     private String replyToMessageId;
-
-    @Column(name = "target_user_ids")
-    private List<String> targetUserIds;
 
     private List<String> media;
 
@@ -58,8 +61,11 @@ public class Message extends AbstractEntity<ObjectId> implements Serializable {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private MessageType type;
 
-    private EnumMap<ReactionType, List<Long>> reactions;
+    private EnumMap<ReactionType, List<String>> reactions;
 
     @Column(name = "deleted_by")
     private List<String> deletedBy;
+
+    @Column(name = "edited_by")
+    private List<String> editedBy;
 }

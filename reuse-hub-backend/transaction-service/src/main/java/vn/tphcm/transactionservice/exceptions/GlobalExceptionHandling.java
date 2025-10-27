@@ -18,9 +18,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import vn.tphcm.itemservice.exceptions.InvalidDataException;
-import vn.tphcm.itemservice.exceptions.ResourceNotFoundException;
-import vn.tphcm.itemservice.exceptions.UploadFileFailedException;
+import vn.tphcm.identityservice.exceptions.InvalidDataException;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Date;
@@ -30,9 +28,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestControllerAdvice
 public class GlobalExceptionHandling {
-
-    private ErrorResponse errorResponse;
-
     /**
      * Handle exception when the request is forbidden (e.g., user does not have permission to access the resource).
      *
@@ -60,7 +55,7 @@ public class GlobalExceptionHandling {
                     )})
     )
     public ErrorResponse handleAccessDeniedException(AccessDeniedException e, WebRequest req) {
-        errorResponse = new ErrorResponse();
+        ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(new Date());
         errorResponse.setPath(req.getDescription(false).replace("url=", ""));
         errorResponse.setStatus(FORBIDDEN.value());
@@ -96,7 +91,7 @@ public class GlobalExceptionHandling {
                     )})
     )
     public ErrorResponse handleInvalidDataException(InvalidDataException e, WebRequest req) {
-        errorResponse = new ErrorResponse();
+        ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(new Date());
         errorResponse.setPath(req.getDescription(false).replace("url=", ""));
         errorResponse.setStatus(BAD_REQUEST.value());
@@ -129,7 +124,7 @@ public class GlobalExceptionHandling {
                     )})
     )
     public ErrorResponse handleDataIntegrityViolationException(DataIntegrityViolationException e, WebRequest req) {
-        errorResponse = new ErrorResponse();
+        ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(new Date());
         errorResponse.setPath(req.getDescription(false).replace("uri=", ""));
         errorResponse.setStatus(CONFLICT.value());
@@ -175,7 +170,7 @@ public class GlobalExceptionHandling {
                     )})
     )
     public ErrorResponse handleResourceNotFoundException(ResourceNotFoundException e, WebRequest req) {
-        errorResponse = new ErrorResponse();
+        ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(new Date());
         errorResponse.setPath(req.getDescription(false).replace("url=", ""));
         errorResponse.setStatus(NOT_FOUND.value());
@@ -185,40 +180,4 @@ public class GlobalExceptionHandling {
         return errorResponse;
     }
 
-    /**
-     * Handle exception when file upload failed.
-     *
-     * @param e
-     * @param req
-     * @return
-     */
-    @ExceptionHandler(UploadFileFailedException.class)
-    @ApiResponses(
-            @ApiResponse(responseCode = "409", description = "Conflict",
-                    content = {@Content(mediaType = APPLICATION_JSON_VALUE,
-                            examples = @ExampleObject(
-                                    name = "404 Response",
-                                    summary = "Handle exception when resource not found",
-                                    value = """
-                                            {
-                                                "timestamp": "2025-03-29T09:00:00.000+00:00",
-                                                "status": 409,
-                                                "path": "/api/v1/...",
-                                                "error": "Conflict",
-                                                "message": "{data} upload failed!"
-                                            }
-                                            """
-                            )
-                    )})
-    )
-    public ErrorResponse handleUploadFileFailed(UploadFileFailedException e, WebRequest req) {
-        errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(new Date());
-        errorResponse.setPath(req.getDescription(false).replace("url=", ""));
-        errorResponse.setStatus(CONFLICT.value());
-        errorResponse.setError(CONFLICT.getReasonPhrase());
-        errorResponse.setMessage(e.getMessage());
-
-        return errorResponse;
-    }
 }

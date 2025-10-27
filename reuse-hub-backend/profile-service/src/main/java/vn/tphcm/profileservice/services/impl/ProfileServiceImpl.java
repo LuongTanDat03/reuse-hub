@@ -12,10 +12,10 @@ package vn.tphcm.profileservice.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import vn.tphcm.profileservice.dtos.ApiResponse;
 import vn.tphcm.profileservice.dtos.request.ProfileUpdateRequest;
@@ -29,8 +29,8 @@ import vn.tphcm.profileservice.models.Address;
 import vn.tphcm.profileservice.models.User;
 import vn.tphcm.profileservice.repositories.AddressRepository;
 import vn.tphcm.profileservice.repositories.UserRepository;
-import vn.tphcm.profileservice.services.AwsService;
 import vn.tphcm.profileservice.services.ProfileService;
+import vn.tphcm.profileservice.services.SupabaseStorageService;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -43,12 +43,16 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserMapper userMapper;
     private final AddressMapper addressMapper;
     private final AddressRepository addressRepository;
-    private final AwsService awsService;
+    private final SupabaseStorageService supabaseStorageService;
 
+    @Value("${avatar.default}")
+    private String avatar;
     @Override
     @Transactional
     public ApiResponse<UserResponse> createProfile(ProfileUserRequest request) {
         User user = userMapper.toUser(request);
+
+        user.setAvatarUrl(avatar);
 
         User savedUser = userRepository.save(user);
 
@@ -93,15 +97,6 @@ public class ProfileServiceImpl implements ProfileService {
     public ApiResponse<ProfileResponse> updateProfile(ProfileUpdateRequest request, MultipartFile file) {
         User user = getUserId(request.getUserId());
 
-        if (file != null && !file.isEmpty()) {
-            if (StringUtils.hasText(request.getAvatarUrl())) {
-                awsService.deleteFile(user.getAvatarUrl());
-            }
-
-            String avatarUrl = awsService.uploadFile(file, "avatars");
-            user.setAvatarUrl(avatarUrl);
-        }
-
         userMapper.update(user, request);
 
         if (request.getAddress() != null) {
@@ -116,6 +111,13 @@ public class ProfileServiceImpl implements ProfileService {
             user.replaceAddresses(address);
 
             addressRepository.saveAll(address);
+        }
+
+        if(file != null && !file.isEmpty()) {
+            String imageUrl = supabaseStorageService.uploadImage(file, "avatars").getImageUrl();
+            log.info("Uploaded avatar image URL: {}", imageUrl);
+
+            user.setAvatarUrl(imageUrl);
         }
 
         User savedUser = userRepository.save(user);

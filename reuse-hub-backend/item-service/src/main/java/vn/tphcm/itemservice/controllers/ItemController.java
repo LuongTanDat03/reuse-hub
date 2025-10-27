@@ -20,7 +20,6 @@ import vn.tphcm.itemservice.dtos.request.ItemCreationRequest;
 import vn.tphcm.itemservice.dtos.request.ItemSearchRequest;
 import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
-import vn.tphcm.itemservice.dtos.response.ItemSummaryResponse;
 import vn.tphcm.itemservice.services.ItemService;
 
 import java.util.List;
@@ -80,7 +79,7 @@ public class ItemController {
     }
 
     @GetMapping("/my-items/{userId}")
-    public ApiResponse<Page<ItemSummaryResponse>> getMyItems(@PathVariable String userId,
+    public ApiResponse<Page<ItemResponse>> getMyItems(@PathVariable String userId,
                                                              @RequestParam(defaultValue = "0") int pageNo,
                                                              @RequestParam(defaultValue = "10") int pageSize,
                                                              @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -90,8 +89,8 @@ public class ItemController {
         return itemService.getMyItem(userId, pageNo, pageSize, sortBy, sortDirection);
     }
 
-    @GetMapping("/all")
-    public ApiResponse<Page<ItemSummaryResponse>> getAllItems(@RequestParam(defaultValue = "0") int pageNo,
+    @GetMapping("/public/all")
+    public ApiResponse<Page<ItemResponse>> getAllItems(@RequestParam(defaultValue = "0") int pageNo,
                                                               @RequestParam(defaultValue = "10") int pageSize,
                                                               @RequestParam(defaultValue = "createdAt") String sortBy,
                                                               @RequestParam(defaultValue = "desc") String sortDirection) {
@@ -100,8 +99,8 @@ public class ItemController {
         return itemService.getAllItems(pageNo, pageSize, sortBy, sortDirection);
     }
 
-    @GetMapping("/popular")
-    public ApiResponse<Page<ItemSummaryResponse>> getPopularItems(@RequestParam(defaultValue = "0") int pageNo,
+    @GetMapping("/public/popular")
+    public ApiResponse<Page<ItemResponse>> getPopularItems(@RequestParam(defaultValue = "0") int pageNo,
                                                                   @RequestParam(defaultValue = "10") int pageSize,
                                                                   @RequestParam(defaultValue = "likeCount") String sortBy,
                                                                   @RequestParam(defaultValue = "desc") String sortDirection) {
@@ -110,8 +109,8 @@ public class ItemController {
         return itemService.getPopularItems(pageNo, pageSize, sortBy, sortDirection);
     }
 
-    @GetMapping("/category/{category}")
-    public ApiResponse<Page<ItemSummaryResponse>> getItemsByCategory(@PathVariable String category,
+    @GetMapping("/public/{category}")
+    public ApiResponse<Page<ItemResponse>> getItemsByCategory(@PathVariable String category,
                                                                      @RequestParam(defaultValue = "0") int pageNo,
                                                                      @RequestParam(defaultValue = "10") int pageSize,
                                                                      @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -121,12 +120,12 @@ public class ItemController {
         return itemService.getItemsByCategory(category, pageNo, pageSize, sortBy, sortDirection);
     }
 
-    @GetMapping("/search")
-    public ApiResponse<Page<ItemSummaryResponse>> searchItems(@RequestBody ItemSearchRequest request,
-                                                              @RequestParam(defaultValue = "0") int pageNo,
-                                                              @RequestParam(defaultValue = "10") int pageSize,
-                                                              @RequestParam(defaultValue = "createdAt") String sortBy,
-                                                              @RequestParam(defaultValue = "desc") String sortDirection) {
+    @GetMapping("/public/search")
+    public ApiResponse<Page<ItemResponse>> searchItems(@RequestBody ItemSearchRequest request,
+                                                       @RequestParam(defaultValue = "0") int pageNo,
+                                                       @RequestParam(defaultValue = "10") int pageSize,
+                                                       @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                       @RequestParam(defaultValue = "desc") String sortDirection) {
         log.info("Received request to search items with criteria: {}", request);
 
         return itemService.searchItems(request, pageNo, pageSize, sortBy, sortDirection);
