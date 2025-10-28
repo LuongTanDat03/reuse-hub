@@ -236,7 +236,9 @@ public class ItemServiceImpl implements ItemService {
                     .timestamp(OffsetDateTime.now())
                     .build();
         }
-        createInteractionIfNotExists(item, userId, InteractionType.LIKE);
+
+        createInteraction(item, userId, InteractionType.LIKE);
+
         item.setLikeCount(item.getLikeCount() + 1);
         itemRepository.save(item);
 
@@ -290,7 +292,7 @@ public class ItemServiceImpl implements ItemService {
                     .build();
         }
 
-        createInteractionIfNotExists(item, userId, InteractionType.UNLIKE);
+        createInteraction(item, userId, InteractionType.UNLIKE);
 
         item.setLikeCount(Math.max(0, item.getLikeCount() - 1));
         itemRepository.save(item);
@@ -524,7 +526,7 @@ public class ItemServiceImpl implements ItemService {
         });
     }
 
-    private void createInteractionIfNotExists(Item item, String userId, InteractionType type) {
+    private void createInteraction(Item item, String userId, InteractionType type) {
         ItemInteraction interaction = new ItemInteraction();
         interaction.setItem(item);
         interaction.setUserId(userId);
@@ -559,7 +561,7 @@ public class ItemServiceImpl implements ItemService {
 
         itemRepository.save(item);
 
-        createInteractionIfNotExists(item, currentUserId, InteractionType.VIEW);
+        createInteraction(item, currentUserId, InteractionType.VIEW);
     }
 
     private Pageable createPageable(int pageNo, int pageSize, String sortBy, String sortDirection) {

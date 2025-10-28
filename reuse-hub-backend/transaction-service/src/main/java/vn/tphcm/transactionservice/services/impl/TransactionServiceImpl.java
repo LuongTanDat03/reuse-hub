@@ -12,6 +12,7 @@ package vn.tphcm.transactionservice.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import vn.tphcm.event.dto.TransactionUpdateEvent;
 import vn.tphcm.transactionservice.client.ItemServiceClient;
 import vn.tphcm.transactionservice.commons.ItemStatus;
 import vn.tphcm.transactionservice.commons.TransactionStatus;
+import vn.tphcm.transactionservice.commons.TransactionType;
 import vn.tphcm.transactionservice.dtos.ApiResponse;
 import vn.tphcm.transactionservice.dtos.request.CreateTransactionRequest;
 import vn.tphcm.transactionservice.dtos.response.ItemResponse;
@@ -30,7 +32,7 @@ import vn.tphcm.transactionservice.exceptions.InvalidDataException;
 import vn.tphcm.transactionservice.mappers.TransactionMapper;
 import vn.tphcm.transactionservice.models.Transaction;
 import vn.tphcm.transactionservice.repositories.TransactionRepository;
-import vn.tphcm.transactionservice.services.MessagePublisher;
+import vn.tphcm.transactionservice.services.MessageProducer;
 import vn.tphcm.transactionservice.services.TransactionService;
 
 import java.time.LocalDateTime;
@@ -44,7 +46,7 @@ import static org.springframework.http.HttpStatus.OK;
 @Slf4j(topic = "TRANSACTION-SERVICE")
 public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
-    private final MessagePublisher messagePublisher;
+    private final MessageProducer messagePublisher;
     private final ItemServiceClient itemServiceClient;
     private final TransactionMapper transactionMapper;
 
@@ -105,6 +107,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .build();
 
         transaction = transactionRepository.save(transaction);
+        log.info("Transaction {} created in database", transaction.getId());
 
         try {
             itemServiceClient.updateItemStatus(request.getItemId(), ItemStatus.RESERVED);
@@ -285,6 +288,46 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public ApiResponse<TransactionResponse> confirmDelivery(String userId, String transactionId, String trackingCode) {
+        return null;
+    }
+
+    @Override
+    public ApiResponse<TransactionResponse> submitFeedback(String userId, String transactionId, String comment, Double rating) {
+        return null;
+    }
+
+    @Override
+    public ApiResponse<Page<TransactionResponse>> getTransactionByBuyerId(String userId, int page, int size, String sortBy, String sortDirection) {
+        return null;
+    }
+
+    @Override
+    public ApiResponse<Page<TransactionResponse>> getTransactionBySellerId(String userId, int page, int size, String sortBy, String sortDirection) {
+        return null;
+    }
+
+    @Override
+    public ApiResponse<Page<TransactionResponse>> getTransactionByUserId(String userId, int page, int size, String sortBy, String sortDirection) {
+        return null;
+    }
+
+    @Override
+    public ApiResponse<Page<TransactionResponse>> getTransactionByStatus(String userId, TransactionStatus status, int page, int size, String sortBy, String sortDirection) {
+        return null;
+    }
+
+    @Override
+    public ApiResponse<Page<TransactionResponse>> getTransactionByType(String userId, TransactionType type, int page, int size, String sortBy, String sortDirection) {
+        return null;
+    }
+
+    @Override
+    public ApiResponse<Page<TransactionResponse>> getTransactionByItemId(String userId, String itemId, int page, int size, String sortBy, String sortDirection) {
+        return null;
+    }
+
+    @Override
+    public ApiResponse<Page<TransactionResponse>> getPendingTransactionsForSeller(String userId, int page, int size, String sortBy, String sortDirection) {
         return null;
     }
 

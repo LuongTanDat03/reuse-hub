@@ -11,6 +11,8 @@ package vn.tphcm.identityservice.repositories;
  * @date: 8/13/2025
  */
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.tphcm.identityservice.models.User;
@@ -23,4 +25,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     User findByUsername(String username);
 
+    boolean existsByUsername(@NotBlank String username);
+
+    boolean existsByEmail(@Email @NotBlank String email);
 }

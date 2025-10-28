@@ -10,30 +10,26 @@ package vn.tphcm.profileservice.controllers;
  * @date: 9/1/2025
  */
 
-import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import vn.tphcm.profileservice.dtos.ApiResponse;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
 import vn.tphcm.profileservice.dtos.request.ProfileUserRequest;
-import vn.tphcm.profileservice.dtos.response.UserResponse;
 import vn.tphcm.profileservice.services.ProfileService;
 
-@RestController
+@Component
 @RequiredArgsConstructor
-@RequestMapping("/profile/internal")
 @Slf4j(topic = "INTERNAL-USER-CONTROLLER")
 public class InternalUserController {
     private final ProfileService profileService;
 
-    @PostMapping("/users")
-    @Operation(summary = "Create user profile", description = "This endpoint allows internal services to create a user profile.")
-    public ApiResponse<UserResponse> createProfile(@RequestBody ProfileUserRequest request) {
-        log.info("Create profile for user: {}", request);
-
-        return profileService.createProfile(request);
+    @RabbitListener(queues = "${rabbitmq.queues.user-profile-creation}")
+    public void handleProfileCreation(ProfileUserRequest request) {
+        try {
+            log.info("Create profile for user: {}", request);
+            profileService.createProfile(request);
+        } catch (Exception e) {
+            log.error("Error creating profile for user: {}, error: {}", request, e.getMessage());
+        }
     }
 }

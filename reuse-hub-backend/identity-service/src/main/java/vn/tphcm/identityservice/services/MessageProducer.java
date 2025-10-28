@@ -13,8 +13,11 @@ package vn.tphcm.identityservice.services;
 
 import org.springframework.stereotype.Service;
 import vn.tphcm.event.dto.NotificationMessage;
+import vn.tphcm.identityservice.dtos.request.ProfileUserRequest;
 
 @Service
 public interface MessageProducer {
     void publishVerificationEmail(NotificationMessage event);
+
+    void publishProfileCreation(ProfileUserRequest request);
 }

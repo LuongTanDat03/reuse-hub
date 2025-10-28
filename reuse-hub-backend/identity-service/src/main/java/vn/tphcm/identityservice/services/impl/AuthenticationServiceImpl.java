@@ -24,15 +24,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vn.tphcm.event.dto.NotificationMessage;
 import vn.tphcm.identityservice.commons.TokenType;
 import vn.tphcm.identityservice.commons.UserStatus;
 import vn.tphcm.identityservice.dtos.ApiResponse;
-import vn.tphcm.identityservice.dtos.request.IntrospectRequest;
-import vn.tphcm.identityservice.dtos.request.LogoutRequest;
-import vn.tphcm.identityservice.dtos.request.SignInRequest;
-import vn.tphcm.identityservice.dtos.request.UserCreationRequest;
+import vn.tphcm.identityservice.dtos.request.*;
 import vn.tphcm.identityservice.dtos.response.IntrospectResponse;
 import vn.tphcm.identityservice.dtos.response.SignInResponse;
 import vn.tphcm.identityservice.dtos.response.UserResponse;
@@ -46,7 +44,6 @@ import vn.tphcm.identityservice.models.UserHasRole;
 import vn.tphcm.identityservice.repositories.RoleRepository;
 import vn.tphcm.identityservice.repositories.UserHasRoleRepository;
 import vn.tphcm.identityservice.repositories.UserRepository;
-import vn.tphcm.identityservice.client.ProfileClient;
 import vn.tphcm.identityservice.services.AuthenticationService;
 import vn.tphcm.identityservice.services.JwtService;
 import vn.tphcm.identityservice.services.MessageProducer;
@@ -70,32 +67,30 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserHasRoleRepository userHasRoleRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
-    private final ProfileClient profileClient;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final MessageProducer messageProducer;
     private final RedisTemplate<String, String> redisTemplate;
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int CODE_LENGTH = 8;
-    private static final int TIMEOUT_REDIS = 5 * 60;
+    private static final int TIMEOUT_REDIS = 15 * 60;
     private final ProfileMapper profileMapper;
 
     @Override
     public ApiResponse<SignInResponse> getAccessToken(SignInRequest request) {
         log.info("Get Access Token");
 
-        List<String> authorities;
+        Authentication authentication;
         try {
             log.info("Username: {},Password: {}", request.getUsernameOrEmail(), request.getPassword());
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsernameOrEmail(), request.getPassword()));
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsernameOrEmail(),
+                            request.getPassword()
+                    )
+            );
 
             log.info("Authentication successful for user: {}", request.getUsernameOrEmail());
-            log.info("Authorities: {}", authentication.getAuthorities());
-            authorities = new ArrayList<>(authentication.getAuthorities().stream()
-                    .map(Object::toString)
-                    .toList());
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (BadCredentialsException e) {
             log.error("Authentication failed for user: {}", request.getUsernameOrEmail(), e);
@@ -108,21 +103,29 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new AccessDeniedException("Login failed");
         }
 
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        User user = (User) authentication.getPrincipal();
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            log.warn("Login attempt for non-active user: {} (Status: {})", user.getUsername(), user.getStatus());
+            throw new AccessDeniedException("Account is " + user.getStatus().name().toLowerCase() + ". Please verify your email or contact support.");
+        }
+
+        log.info("Authorities: {}", authentication.getAuthorities());
+        List<String> authorities = user.getAuthorities().stream()
+                .map(Object::toString)
+                .toList();
+
         String accessToken = jwtService.generateAccessToken(request.getUsernameOrEmail(), authorities);
         log.info("Generated access token: {}", accessToken.substring(0, 7));
 
         String refreshToken = jwtService.generateRefreshToken(request.getUsernameOrEmail(), authorities);
         log.info("Generated refresh token: {}", refreshToken.substring(0, 7));
 
-        Optional<User> user = userRepository.findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail());
 
-        if (user.isEmpty()) {
-            log.error("User not found: {}", request.getUsernameOrEmail());
-            throw new ResourceNotFoundException("User not found");
-        }
-
-        redisTemplate.opsForValue().set("accessToken:" + user.get().getId(), accessToken, Duration.ofDays(7));
-        redisTemplate.opsForValue().set("refreshToken:" + user.get().getId(), refreshToken, Duration.ofDays(7));
+        redisTemplate.opsForValue().set("accessToken:" + user.getId(), accessToken, Duration.ofDays(7));
+        redisTemplate.opsForValue().set("refreshToken:" + user.getId(), refreshToken, Duration.ofDays(7));
 
         return ApiResponse.<SignInResponse>builder()
                 .status(HttpStatus.OK.value())
@@ -158,7 +161,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             String newAccessToken = jwtService.generateAccessToken(username, authorities);
             log.info("Generated new access token: {}", newAccessToken.substring(0, 7));
 
-            return ApiResponse.<SignInResponse>builder().status(HttpStatus.OK.value()).message("Refresh token successfully").data(SignInResponse.builder().accessToken(newAccessToken).refreshToken(refreshToken).build()).timestamp(OffsetDateTime.now()).build();
+            return ApiResponse.<SignInResponse>builder()
+                    .status(HttpStatus.OK.value())
+                    .message("Refresh token successfully")
+                    .data(SignInResponse.builder()
+                            .accessToken(newAccessToken)
+                            .refreshToken(refreshToken)
+                            .build())
+                    .timestamp(OffsetDateTime.now()).build();
         } catch (Exception e) {
             log.error("Error generating refresh token: {}", e.getMessage());
             throw new AccessDeniedException("Failed to refresh token");
@@ -166,31 +176,37 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
+    @Transactional
     public ApiResponse<UserResponse> register(UserCreationRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            log.error("Username already exists: {}", request.getUsername());
+            throw new DataIntegrityViolationException("Username already exists");
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            log.error("Email already exists: {}", request.getEmail());
+            throw new DataIntegrityViolationException("Email already exists");
+        }
+
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setStatus(UserStatus.PENDING);
 
-        try {
-            user = userRepository.save(user);
-            assignDefaultRoleToUser(user);
-            log.info("Create user successfully: {} with Role: {}", user.getId(), user.getRoles());
-        } catch (DataIntegrityViolationException e) {
-            log.error("Data integrity violation: {}", e.getMessage());
-            throw new DataIntegrityViolationException("Username or Email already exists");
-        }
-
-        var profileRequest = profileMapper.toRegisterRequest(request);
-        profileRequest.setUserId(user.getId());
-        profileClient.createProfile(profileRequest);
+        user = userRepository.save(user);
+        assignDefaultRoleToUser(user);
+        log.info("Create user successfully: {} with Role: {}", user.getId(), user.getRoles());
 
         // Generate verification code
         String verifyCode = generateCode();
 
         // Save verifyCode in Redis with a TTL of 5 minutes
         String redisKey = "verify:userId" + user.getId();
-        redisTemplate.opsForValue().set(redisKey, verifyCode, TIMEOUT_REDIS, MINUTES);
-        log.info("Stored verifyCode in Redis with key: {}, code: {}", redisKey, verifyCode);
+        try {
+            redisTemplate.opsForValue().set(redisKey, verifyCode, TIMEOUT_REDIS, MINUTES);
+            log.info("Stored verifyCode in Redis with key: {}, code: {}", redisKey, verifyCode);
+        }catch (Exception e){
+            log.error("Failed to store verifyCode in Redis for userId={}: {}", user.getId(), e.getMessage());
+        }
 
         // Send message to RabbitMQ Exchange
 
@@ -199,11 +215,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .recipient(user.getEmail())
                 .subject("Please verify your account")
                 .templateCode("send-email.html")
-                .param(Map.of("verificationCode", verifyCode))
+                .param(Map.of("verificationCode", verifyCode, "username", user.getUsername()))
                 .build();
 
         messageProducer.publishVerificationEmail(event);
         log.info("📨 Verification email message sent for userId={}, email={}", user.getId(), user.getEmail());
+
+        ProfileUserRequest profileEvent = profileMapper.toRegisterRequest(request);
+        profileEvent.setUserId(user.getId());
+
+        messageProducer.publishProfileCreation(profileEvent);
+        log.info("📨 Profile creation message sent for userId={}", user.getId());
 
         return ApiResponse.<UserResponse>builder()
                 .status(HttpStatus.CREATED.value())
@@ -215,22 +237,37 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public ApiResponse<Void> logout(LogoutRequest request) {
-        String userId = jwtService.extractUsername(request.getToken(), TokenType.ACCESS_TOKEN);
+        log.info("Processing logout request....");
+        if (!StringUtils.hasText(request.getToken())){
+            throw new InvalidDataException("Invalid token");
+        }
 
-        // Delete token from Redis
-        String accessToken = "accessToken:" + userId;
-        String refreshToken = "refreshToken:" + userId;
+        try {
+            boolean isValid = jwtService.isTokenValid(request.getToken(), TokenType.ACCESS_TOKEN);
+            if (!isValid) {
+                log.warn("Attempt to logout with invalid token: {}", request.getToken().substring(0, 7));
+            }
 
-        jwtService.deleteToken(accessToken);
-        jwtService.deleteToken(refreshToken);
+            String userId = jwtService.extractUsername(request.getToken(), TokenType.ACCESS_TOKEN);
 
-        SecurityContextHolder.clearContext();
+            // Delete token from Redis
+            String accessToken = "accessToken:" + userId;
+            String refreshToken = "refreshToken:" + userId;
+
+            jwtService.deleteToken(accessToken);
+            jwtService.deleteToken(refreshToken);
+
+            SecurityContextHolder.clearContext();
+        } catch (Exception e) {
+            log.error("Error during logout: {}", e.getMessage());
+            throw new AccessDeniedException("Logout failed");
+        }
 
         return ApiResponse.<Void>builder()
-                .status(HttpStatus.OK.value())
-                .message("Logout successful")
-                .data(null)
-                .timestamp(OffsetDateTime.now()).build();
+                    .status(HttpStatus.OK.value())
+                    .message("Logout successful")
+                    .data(null)
+                    .timestamp(OffsetDateTime.now()).build();
     }
 
     @Override
@@ -254,6 +291,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String storedCode = redisTemplate.opsForValue().get(redisKey);
         if (storedCode == null || !storedCode.equals(verificationCode)) {
             log.error("Invalid verification code for user ID: {}", userId);
+
+            // Could log the attempt or take additional actions here
             throw new AccessDeniedException("Invalid verification code");
         }
 
@@ -285,11 +324,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                         .build();
             }
 
+            String username = jwtService.extractUsername(request.getToken(), TokenType.ACCESS_TOKEN);
+
+            String userId = userRepository.findByUsername(username).getId();
+
             return ApiResponse.<IntrospectResponse>builder()
                     .status(HttpStatus.OK.value())
                     .message("Token is valid")
                     .data(IntrospectResponse.builder()
                             .valid(true)
+                            .userId(userId)
                             .build())
                     .timestamp(OffsetDateTime.now()).build();
         } catch (Exception e) {
@@ -315,9 +359,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private void assignDefaultRoleToUser(User user) {
-        if (userHasRoleRepository.existsByUser_IdAndRole_Id(user.getId(), "USER")) {
+        boolean hasUserRole = userHasRoleRepository.findByUser_Id(user.getId()).stream()
+                .anyMatch(userHasRole -> "USER".equals(userHasRole.getRole().getName()));
+
+        if (hasUserRole) {
             log.info("User already has the default role assigned: {}", user.getId());
-            throw new ResourceNotFoundException("User already has the default role assigned");
+            return;
         }
 
         Optional<Role> role = roleRepository.findByName("USER");

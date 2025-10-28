@@ -133,17 +133,6 @@ public class JwtServiceImpl implements JwtService {
         }
     }
 
-    @Override
-    public Claims extractAllClaims(String token, TokenType tokenType) {
-        return extractAllClaim(tokenType, token);
-    }
-    
-    @Override
-    public List<String> extractAuthorities(String token, TokenType tokenType) {
-        Claims claims = extractAllClaim(tokenType, token);
-        return (List<String>) claims.get("authorities");
-    }
-
     private <T> T extractClaim(TokenType type, String token, Function<Claims, T> claimsExtractor) {
         log.info("-----------------[EXTRACT CLAIM]-----------------");
         final Claims claims = extractAllClaim(type, token);

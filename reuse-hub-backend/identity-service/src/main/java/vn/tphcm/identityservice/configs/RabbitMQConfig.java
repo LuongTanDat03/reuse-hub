@@ -31,6 +31,9 @@ public class RabbitMQConfig {
     public static final String Q_VERIFICATION = "q.verification";
     public static final String Q_VERIFICATION_DLX = "q.verification.dlx";
     public static final String EXCHANGE_VERIFICATION_DLX = "ex.verification.dlx";
+    public static final String EXCHANGE_PROFILE = "ex.profile";
+    public static final String RK_PROFILE_CREATE = "rk.profile.create";
+    public static final String Q_PROFILE_CREATE = "q.profile.create";
 
     @Bean
     public DirectExchange notificationExchange() {
@@ -98,6 +101,24 @@ public class RabbitMQConfig {
     @Bean
     public Binding verificationBindingDlq() {
         return BindingBuilder.bind(verificationDlq()).to(verificationDlx()).with(Q_VERIFICATION_DLX);
+    }
+
+    @Bean
+    public TopicExchange profileExchange() {
+        return new TopicExchange(EXCHANGE_PROFILE, true, false);
+    }
+
+    @Bean
+    public Queue profileCreateQueue() {
+        return new Queue(Q_PROFILE_CREATE, true);
+    }
+
+    @Bean
+    public Binding profileCreateBinding() {
+        return BindingBuilder
+                .bind(profileCreateQueue())
+                .to(profileExchange())
+                .with(RK_PROFILE_CREATE);
     }
 
     @Bean

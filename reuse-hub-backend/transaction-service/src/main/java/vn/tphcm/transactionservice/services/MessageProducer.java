@@ -15,7 +15,7 @@ import vn.tphcm.event.dto.TransactionUpdateEvent;
  * @date: 10/24/2025
  */
 
-public interface MessagePublisher {
+public interface MessageProducer {
     void publishTransactionEvent(TransactionEventMessage event);
 
     void publishUpdateTransactionEvent(TransactionUpdateEvent event);

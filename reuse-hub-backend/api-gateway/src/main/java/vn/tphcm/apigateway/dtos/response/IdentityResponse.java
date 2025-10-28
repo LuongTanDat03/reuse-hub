@@ -21,4 +21,5 @@ import java.util.List;
 @Builder
 public class IdentityResponse {
     private boolean valid;
+    private String userId;
 }

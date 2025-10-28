@@ -38,6 +38,10 @@ file:
 avatar:
   default: https://i.ibb.co/mrL8wYRs/default.jpg
 
+rabbitmq:
+  queues:
+    user-profile-creation: q.profile.create
+
 springdoc:
   api-docs:
     enabled: true

@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,10 +27,12 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import vn.tphcm.apigateway.dtos.ApiResponse;
-import vn.tphcm.apigateway.services.IdentityService;
+import vn.tphcm.apigateway.dtos.request.IdentityRequest;
+import vn.tphcm.apigateway.dtos.response.IdentityResponse;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +41,7 @@ import java.util.List;
 @Slf4j(topic = "AUTHENTICATION-FILTER")
 @RequiredArgsConstructor
 public class AuthenticationFilter implements GlobalFilter, Ordered {
-    private final IdentityService identityService;
+    private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
 
     @NonFinal
@@ -69,18 +72,30 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         log.info("Authorization header: {}", token);
 
-        return identityService.introspect(token).flatMap(introspectResponseApiResponse -> {
-            log.info("Introspect response: {}", introspectResponseApiResponse.getData());
-            if (introspectResponseApiResponse.getData().isValid()) {
-                return chain.filter(exchange);
-
-            } else {
-                return unauthenticated(exchange.getResponse());
-            }
-        }).onErrorResume(throwable -> {
-            log.error("Error when introspect token: {}", throwable.getMessage());
-            return unauthenticated(exchange.getResponse());
-        });
+        return webClientBuilder.build().post()
+                .uri("lb://identity-service/api/v1/identity/auth/introspect")
+                .bodyValue(new IdentityRequest(token))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<IdentityResponse>>() {
+                })
+                .flatMap(apiResponse -> {
+                    if (apiResponse != null && apiResponse.getData() != null && apiResponse.getData().isValid()) {
+                        log.info("Token is valid. Proceeding to the next filter...");
+                        ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                                .header("X-User-Id", apiResponse.getData().getUserId())
+                                .build();
+                        ServerWebExchange mutatedExchange = exchange.mutate()
+                                .request(mutatedRequest)
+                                .build();
+                        return chain.filter(mutatedExchange);
+                    } else {
+                        log.info("Token is invalid. Returning unauthenticated response...");
+                        return unauthenticated(exchange.getResponse());
+                    }
+                }).onErrorResume(throwable -> {
+                    log.error("Error during token introspection: {}", throwable.getMessage());
+                    return unauthenticated(exchange.getResponse());
+                });
     }
 
     @Override
@@ -109,7 +124,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         try {
             body = objectMapper.writeValueAsString(apiResponse);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+           log.error("Failed to serialize unauthenticated response", e);
+           body = "{\"status\":401,\"message\":\"Unauthenticated\"}";
         }
 
         response.setStatusCode(HttpStatus.UNAUTHORIZED);

@@ -18,12 +18,12 @@ import org.springframework.stereotype.Service;
 import vn.tphcm.event.dto.NotificationMessage;
 import vn.tphcm.event.dto.TransactionEventMessage;
 import vn.tphcm.event.dto.TransactionUpdateEvent;
-import vn.tphcm.transactionservice.services.MessagePublisher;
+import vn.tphcm.transactionservice.services.MessageProducer;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "MESSAGE-PUBLISHER")
-public class MessagePublisherImpl implements MessagePublisher {
+public class MessageProducerImpl implements MessageProducer {
     private final RabbitTemplate rabbitTemplate;
     @Value("${rabbitmq.exchanges.transaction-exchange}")
     private String transactionExchange;

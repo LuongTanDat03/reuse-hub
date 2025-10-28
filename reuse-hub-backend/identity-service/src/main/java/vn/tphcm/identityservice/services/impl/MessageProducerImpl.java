@@ -17,6 +17,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import vn.tphcm.event.dto.NotificationMessage;
 import vn.tphcm.identityservice.configs.RabbitMQConfig;
+import vn.tphcm.identityservice.dtos.request.ProfileUserRequest;
 import vn.tphcm.identityservice.services.MessageProducer;
 
 import java.util.UUID;
@@ -44,5 +45,19 @@ public class MessageProducerImpl implements MessageProducer {
                 event.getRecipient(),
                 event.getSubject(),
                 event.getTemplateCode());
+    }
+
+    @Override
+    public void publishProfileCreation(ProfileUserRequest request) {
+        try {
+            log.info("Publishing profile creation message for userId: {}", request.getUserId());
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE_PROFILE,
+                    RabbitMQConfig.RK_PROFILE_CREATE,
+                    request
+            );
+        } catch (Exception e) {
+            log.error("Failed to publish profile creation message: {}", e.getMessage());
+        }
     }
 }

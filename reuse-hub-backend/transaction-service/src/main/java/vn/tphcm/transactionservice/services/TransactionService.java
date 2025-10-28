@@ -50,7 +50,5 @@ public interface TransactionService {
 
     ApiResponse<Page<TransactionResponse>> getPendingTransactionsForSeller(String userId, int page, int size, String sortBy, String sortDirection);
 
-    ApiResponse<List<Transaction>>
-
     void processExpiredTransaction();
 }

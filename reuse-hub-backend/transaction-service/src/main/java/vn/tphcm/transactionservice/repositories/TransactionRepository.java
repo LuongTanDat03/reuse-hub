@@ -48,17 +48,21 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
     @Query("SELECT t FROM Transaction t WHERE t.status = 'PENDING' AND t.sellerId = :sellerId ORDER BY t.createdAt DESC")
     Page<Transaction> findPendingForSeller(@Param("sellerId") String sellerId, Pageable pageable);
 
-    @Query("SELECT t FROM Transaction t WHERE t.status = 'PENDING' AND t.createdAt <= :now")
-    List<Transaction> findExpiredTransactions(@Param("now") LocalDateTime now);
+    /**
+     * Find expired transactions with given statuses before a specific time
+     * @param statues
+     * @param expireAt
+     * @return
+     */
+    List<Transaction> findByStatusInAndExpiresAtBefore(@Param("statues") List<TransactionStatus> statues,@Param("now") LocalDateTime expireAt);
 
     @Query("SELECT t FROM Transaction t WHERE t.status = :status AND (t.buyerId = :userId OR t.sellerId = :userId) ORDER BY t.createdAt DESC")
     Page<Transaction> findByUserIdAndStatus(@Param("status") TransactionStatus status, @Param("userId") String userId, Pageable pageable);
 
     @Query("SELECT COUNT(t) > 0 FROM Transaction t " +
             "WHERE t.itemId = :itemId " +
-            "AND (t.buyerId = :buyerId " +
-            "OR t.sellerId = :buyerId) " +
-            "AND t.status NOT IN ('CANCELED', 'COMPLETED', 'REFUNDED')")
+            "AND t.buyerId = :buyerId " +
+            "AND t.status IN ('PENDING', 'RESERVED')")
     boolean hasActiveTransactionForItem(@Param("itemId") String itemId, @Param("userId") String userId);
 
 

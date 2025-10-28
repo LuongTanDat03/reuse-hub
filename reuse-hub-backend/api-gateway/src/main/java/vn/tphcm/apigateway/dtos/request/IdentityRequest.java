@@ -10,10 +10,14 @@ package vn.tphcm.apigateway.dtos.request;
  * @date: 8/26/2025
  */
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class IdentityRequest {
     private String token;

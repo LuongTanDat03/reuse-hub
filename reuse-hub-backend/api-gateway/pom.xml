@@ -93,10 +93,9 @@
             <version>0.12.6</version>
         </dependency>
 
-        <!-- OpenFeign -->
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
         </dependency>
 
     </dependencies>

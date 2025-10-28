@@ -19,4 +19,5 @@ import lombok.*;
 @Builder
 public class IntrospectResponse {
     private boolean valid;
+    private String userId;
 }
