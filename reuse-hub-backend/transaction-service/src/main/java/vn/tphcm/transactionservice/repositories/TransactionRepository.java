@@ -27,34 +27,26 @@ import java.util.List;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, String> {
 
-    @Query("SELECT t FROM Transaction t WHERE t.buyerId = :buyerId ORDER BY t.createdAt DESC")
-    Page<Transaction> findByBuyerId(@Param("buyerId") String buyerId, Pageable pageable);
+    Page<Transaction> findByBuyerIdOrderByCreatedAtDesc(String buyerId, Pageable pageable);
 
-    @Query("SELECT t FROM Transaction t WHERE t.sellerId = :sellerId ORDER BY t.createdAt DESC")
-    Page<Transaction> findBySellerId(@Param("sellerId") String sellerId, Pageable pageable);
+    Page<Transaction> findBySellerIdOrderByCreatedAtDesc(String sellerId, Pageable pageable);
+
+   Page<Transaction> findByStatusOrderByCreatedAtDesc(TransactionStatus status, Pageable pageable);
+
+    Page<Transaction> findByTypeOrderByCreatedAtDesc(TransactionType type, Pageable pageable);
+
+    Page<Transaction> findByItemIdOrderByCreatedAtDesc(String itemId, Pageable pageable);
+
+    List<Transaction> findByStatusInAndExpiresAtBefore(List<TransactionStatus> statuses, LocalDateTime expiresAt);
 
     @Query("SELECT t FROM Transaction t WHERE t.buyerId = :userId OR t.sellerId = :userId ORDER BY t.createdAt DESC")
     Page<Transaction> findByUserId(@Param("userId") String userId, Pageable pageable);
 
-    @Query("SELECT t FROM Transaction t WHERE t.status = :status ORDER BY t.createdAt DESC")
-    Page<Transaction> findByStatus(@Param("status") TransactionStatus status, Pageable pageable);
-
-    @Query("SELECT t FROM Transaction t WHERE t.type = :type ORDER BY t.createdAt DESC")
-    Page<Transaction> findByType(@Param("type") TransactionType type, Pageable pageable);
-
-    @Query ("SELECT t FROM Transaction t WHERE t.itemId = :itemId ORDER BY t.createdAt DESC")
-    Page<Transaction> findByItemId(@Param("itemId") String itemId, Pageable pageable);
-
     @Query("SELECT t FROM Transaction t WHERE t.status = 'PENDING' AND t.sellerId = :sellerId ORDER BY t.createdAt DESC")
     Page<Transaction> findPendingForSeller(@Param("sellerId") String sellerId, Pageable pageable);
 
-    /**
-     * Find expired transactions with given statuses before a specific time
-     * @param statues
-     * @param expireAt
-     * @return
-     */
-    List<Transaction> findByStatusInAndExpiresAtBefore(@Param("statues") List<TransactionStatus> statues,@Param("now") LocalDateTime expireAt);
+    @Query("SELECT t FROM Transaction t WHERE t.status = 'PENDING' AND t.expiresAt <= :now")
+    List<Transaction> findExpiredPendingTransactions(@Param("now") LocalDateTime now);
 
     @Query("SELECT t FROM Transaction t WHERE t.status = :status AND (t.buyerId = :userId OR t.sellerId = :userId) ORDER BY t.createdAt DESC")
     Page<Transaction> findByUserIdAndStatus(@Param("status") TransactionStatus status, @Param("userId") String userId, Pageable pageable);
@@ -62,7 +54,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
     @Query("SELECT COUNT(t) > 0 FROM Transaction t " +
             "WHERE t.itemId = :itemId " +
             "AND t.buyerId = :buyerId " +
-            "AND t.status IN ('PENDING', 'RESERVED')")
+            "AND t.status = 'PENDING'")
     boolean hasActiveTransactionForItem(@Param("itemId") String itemId, @Param("userId") String userId);
 
 

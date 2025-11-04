@@ -146,15 +146,17 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public void incrementItemViewCount(String itemId) {
+    public Long incrementItemViewCount(String itemId) {
         try {
             String key = VIEW_COUNT_PREFIX + itemId;
             redisTemplate.opsForValue().increment(key);
             redisTemplate.expire(key, Duration.ofDays(7));
             log.info("Incremented view count for item {} with key {}", itemId, key);
+            return (Long) redisTemplate.opsForValue().get(key);
         } catch (Exception e) {
             log.error("Failed to increment view count for item {}: {}", itemId, e.getMessage());
         }
+        return null;
     }
 
     @Override

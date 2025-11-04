@@ -66,7 +66,7 @@ spring:
               filters:
                 - StripPrefix=2
 
-            - id: admin-service
+            - id: payment-service
               uri: lb://admin-service
               predicates:
                 - Path=${app.api-prefix}/admin/**

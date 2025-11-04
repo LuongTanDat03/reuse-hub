@@ -1,7 +1,16 @@
 spring:
   config:
     activate:
-      on-profile: dev
+      on-profile: test
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
 
 springdoc:
   api-docs:
@@ -15,9 +24,3 @@ openapi:
     server: ${BACKEND_SERVICE:http://localhost:${server.port}}
     title: reuse-hub
     version: 1.0.0
-
-jwt:
-  expiryMinutes: 10080
-  expiryDay: 7
-  accessKey: vp/W0H2km+ha54EMwdU0lsVb8JNtoFrRlXVgytwhCsA=
-  refreshKey: w+7+dny0YjqUN/bwKsejjgkBUdRUOeI7Liqr3jn2cqM=

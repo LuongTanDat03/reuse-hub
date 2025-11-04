@@ -19,6 +19,7 @@ import vn.tphcm.itemservice.dtos.ApiResponse;
 import vn.tphcm.itemservice.dtos.request.ItemCreationRequest;
 import vn.tphcm.itemservice.dtos.request.ItemSearchRequest;
 import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
+import vn.tphcm.itemservice.dtos.response.CommentResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
 import vn.tphcm.itemservice.services.ItemService;
 
@@ -129,5 +130,16 @@ public class ItemController {
         log.info("Received request to search items with criteria: {}", request);
 
         return itemService.searchItems(request, pageNo, pageSize, sortBy, sortDirection);
+    }
+
+    @GetMapping("/public/comments/{itemId}")
+    public ApiResponse<Page<CommentResponse>> getItemComments(@PathVariable String itemId,
+                                                              @RequestParam(defaultValue = "0") int pageNo,
+                                                              @RequestParam(defaultValue = "10") int pageSize,
+                                                              @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                              @RequestParam(defaultValue = "desc") String sortDirection) {
+        log.info("Received request to get comments for item: {}", itemId);
+
+        return itemService.getItemComments(itemId, pageNo, pageSize, sortBy, sortDirection);
     }
 }

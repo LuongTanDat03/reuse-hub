@@ -11,10 +11,7 @@ package vn.tphcm.itemservice.models;
  */
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.Point;
@@ -35,6 +32,7 @@ import java.util.Map;
         @Index(name = "idx_items_user_id", columnList = "user_id"),
         @Index(name = "idx_items_status", columnList = "status")
 })
+@Builder
 public class Item extends AbstractEntity<String> implements Serializable {
     @Column(name = "user_id", nullable = false)
     private String userId;
@@ -45,10 +43,12 @@ public class Item extends AbstractEntity<String> implements Serializable {
 
     @Column(columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
+    @Builder.Default
     private List<String> images = new ArrayList<>();
 
     @Column(columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
+    @Builder.Default
     private List<String> tags = new ArrayList<>();
 
     private String category;
@@ -57,27 +57,51 @@ public class Item extends AbstractEntity<String> implements Serializable {
     @JdbcTypeCode(SqlTypes.GEOMETRY)
     private Point location;
 
+    private String address;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Builder.Default
     private ItemStatus status = ItemStatus.AVAILABLE;
 
-    @Column(name = "view_count")
-    private int viewCount;
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0", name = "view_count")
+    @Builder.Default
+    private int viewCount = 0;
 
-    @Column(name = "comment_count")
-    private int commentCount;
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0", name = "comment_count")
+    @Builder.Default
+    private int commentCount = 0;
 
-    @Column(name = "like_count")
-    private int likeCount;
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0", name = "like_count")
+    @Builder.Default
+    private int likeCount = 0;
+
+    @Column(nullable = false, columnDefinition = "DOUBLE PRECISION DEFAULT 0.0")
+    @Builder.Default
+    private Double rating = 0.0;
+
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0", name = "rating_count")
+    @Builder.Default
+    private Integer ratingCount = 0;
 
     private Long price;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private boolean isPremium = false;
+
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @Builder.Default
     private List<ItemComment> comments = new ArrayList<>();
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @Builder.Default
     private List<ItemRating> ratings = new ArrayList<>();
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @Builder.Default
     private List<ItemInteraction> itemInteractions = new ArrayList<>();
 }

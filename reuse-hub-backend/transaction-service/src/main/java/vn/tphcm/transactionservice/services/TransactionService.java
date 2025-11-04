@@ -14,19 +14,18 @@ package vn.tphcm.transactionservice.services;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import vn.tphcm.event.dto.PaymentEvent;
 import vn.tphcm.transactionservice.commons.TransactionStatus;
 import vn.tphcm.transactionservice.commons.TransactionType;
 import vn.tphcm.transactionservice.dtos.ApiResponse;
 import vn.tphcm.transactionservice.dtos.request.CreateTransactionRequest;
 import vn.tphcm.transactionservice.dtos.response.TransactionResponse;
 
-import java.util.List;
-
 @Service
 public interface TransactionService {
     ApiResponse<TransactionResponse> createTransaction(CreateTransactionRequest request, String userId);
 
-    ApiResponse<TransactionResponse> completeTransaction(String userId, String transactionId, TransactionStatus status);
+    ApiResponse<TransactionResponse> completeTransaction(String userId, String transactionId);
 
     ApiResponse<TransactionResponse> cancelTransaction(String userId, String transactionId, String reason);
 
@@ -51,4 +50,6 @@ public interface TransactionService {
     ApiResponse<Page<TransactionResponse>> getPendingTransactionsForSeller(String userId, int page, int size, String sortBy, String sortDirection);
 
     void processExpiredTransaction();
+
+    void processPaymentResult(PaymentEvent event);
 }

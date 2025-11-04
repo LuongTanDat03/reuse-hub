@@ -10,6 +10,10 @@ package vn.tphcm.transactionservice.services;
  * @date: 10/28/2025
  */
 
-public interface MessageConsumer {
+import vn.tphcm.event.dto.ItemReservationEvent;
 
+public interface MessageConsumer {
+    void handleItemReserved(ItemReservationEvent event);
+
+    void handleItemReservationFailed(ItemReservationEvent event);
 }

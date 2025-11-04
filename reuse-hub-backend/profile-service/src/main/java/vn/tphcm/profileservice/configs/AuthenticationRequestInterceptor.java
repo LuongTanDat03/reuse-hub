@@ -17,8 +17,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.util.Enumeration;
-
 @Slf4j(topic = "AUTHENTICATION-REQUEST-INTERCEPTOR")
 public class AuthenticationRequestInterceptor implements RequestInterceptor {
     @Override

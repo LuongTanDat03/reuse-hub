@@ -14,7 +14,6 @@ import lombok.Getter;
 
 @Getter
 public class SubmitRatingRequest {
-    private String itemId;
     private Double rating;
     private String comment;
 }

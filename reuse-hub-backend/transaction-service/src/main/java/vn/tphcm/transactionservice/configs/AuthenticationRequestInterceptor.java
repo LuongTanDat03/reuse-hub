@@ -13,23 +13,27 @@ package vn.tphcm.transactionservice.configs;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
+@Component
 @Slf4j(topic = "AUTHENTICATION-REQUEST-INTERCEPTOR")
 public class AuthenticationRequestInterceptor implements RequestInterceptor {
     @Override
-    public void apply(RequestTemplate requestTemplate) {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+    public void apply(RequestTemplate template) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        assert attributes != null;
-        var authHeader = attributes.getRequest().getHeader("Authorization");
-
-        log.info("Header Authorization: {}", authHeader);
-
-        if (StringUtils.hasText(authHeader)) {
-            requestTemplate.header("Authorization", authHeader);
+        if (authentication != null && authentication.getCredentials() != null) {
+            String token = authentication.getCredentials().toString();
+            if (StringUtils.hasText(token)) {
+                log.info("Adding Authorization header to outgoing request");
+                template.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+            }
+        } else {
+            log.warn("No authentication information found in SecurityContext");
         }
     }
 }

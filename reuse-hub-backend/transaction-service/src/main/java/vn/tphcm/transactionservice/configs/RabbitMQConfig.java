@@ -24,27 +24,27 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
     @Value("${rabbitmq.exchanges.transaction-exchange}")
     private String transactionExchange;
-
     @Value("${rabbitmq.exchanges.notification-exchange}")
     private String notificationExchange;
+    @Value("${rabbitmq.exchanges.saga}")
+    private String sagaExchange;
 
-    @Value("${rabbitmq.queues.transaction-queue}")
-    private String transactionQueue;
+    @Value("${rabbitmq.routing-keys.saga.item-reserved}")
+    private String itemReservedRK;
+    @Value("${rabbitmq.routing-keys.saga.item-reservation-failed}")
+    private String itemReservationFailedRK;
 
-    @Value("${rabbitmq.queues.notification-queue}")
-    private String notificationQueue;
+    @Value("${rabbitmq.queues.saga.transaction-update-reserved}")
+    private String transactionUpdateReservedQueue;
+    @Value("${rabbitmq.queues.saga.transaction-update-failed}")
+    private String transactionUpdateFailedQueue;
 
-    @Value("${rabbitmq.queues.web-socket-queue}")
-    private String webSocketQueue;
-
-    @Value("${rabbitmq.routing-keys.transaction-routing-key}")
-    private String transactionRoutingKey;
-
-    @Value("${rabbitmq.routing-keys.notification-routing-key}")
-    private String notificationRoutingKey;
-
-    @Value("${rabbitmq.routing-keys.web-socket-routing-key}")
-    private String webSocketRoutingKey;
+    @Value("${rabbitmq.routing-key.payment.completed}")
+    private String paymentCompletedRK;
+    @Value("${rabbitmq.routing-key.payment.failed}")
+    private String paymentFailedRK;
+    @Value("${rabbitmq.queue.payment.transaction-payment}")
+    private String transactionPaymentQueue;
 
     @Bean
     public TopicExchange transactionExchange() {
@@ -59,52 +59,52 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue transactionQueue() {
-        log.info("Declaring Queue Transaction: {}", transactionQueue);
-        return new Queue(transactionQueue, true);
+    public TopicExchange sagaExchange(){
+        log.info("Declaring Direct Exchange Saga: {}", sagaExchange);
+        return new TopicExchange(sagaExchange, true, false);
     }
 
     @Bean
-    public Binding transactionBinding(){
-        log.info("Binding Queue Transaction {} to Exchange {} with Routing Key: {}", transactionQueue, transactionExchange, transactionRoutingKey);
-
-        return BindingBuilder
-                .bind(transactionQueue())
-                .to(transactionExchange())
-                .with(transactionRoutingKey);
-    }
-
-
-    @Bean
-    public Queue notificationQueue() {
-        log.info("Declaring Queue Notification: {}", notificationQueue);
-        return new Queue(notificationQueue, true);
+    public Queue transactionUpdateReservedQueue() {
+        return new Queue(transactionUpdateReservedQueue);
     }
 
     @Bean
-    public Binding notificationBinding(){
-        log.info("Binding Queue Notification {} to Exchange {} with Routing Key: {}", notificationQueue, notificationExchange, notificationRoutingKey);
-
-        return BindingBuilder
-                .bind(notificationQueue())
-                .to(notificationExchange())
-                .with(notificationRoutingKey);
+    public Queue transactionUpdateFailedQueue() {
+        return new Queue(transactionUpdateFailedQueue);
     }
 
     @Bean
-    public Queue webSocketQueue() {
-        log.info("Declaring Queue Web Socket: {}", webSocketQueue);
-        return new Queue(webSocketQueue, true);
+    public Binding itemReservedBinding(Queue transactionUpdateReservedQueue, TopicExchange sagaExchange) {
+        return BindingBuilder.bind(transactionUpdateReservedQueue)
+                .to(sagaExchange)
+                .with(itemReservedRK);
     }
 
     @Bean
-    public Binding webSocketBinding(){
-        log.info("Binding Queue Web Socket {} to Exchange {} with Routing Key: {}", webSocketQueue, notificationExchange, webSocketRoutingKey);
+    public Binding itemReservationFailedBinding(Queue transactionUpdateFailedQueue, TopicExchange sagaExchange) {
+        return BindingBuilder.bind(transactionUpdateFailedQueue)
+                .to(sagaExchange)
+                .with(itemReservationFailedRK);
+    }
 
-        return BindingBuilder
-                .bind(webSocketQueue())
-                .to(notificationExchange())
-                .with(webSocketRoutingKey);
+    @Bean
+    public Queue transactionPaymentQueue() {
+        return new Queue(transactionPaymentQueue, true);
+    }
+
+    @Bean
+    public Binding transPaymentCompletedBinding(Queue transactionPaymentQueue, TopicExchange sagaExchange) {
+        return BindingBuilder.bind(transactionPaymentQueue)
+                .to(sagaExchange)
+                .with(paymentCompletedRK);
+    }
+
+    @Bean
+    public Binding transPaymentFailedBinding(Queue transactionPaymentQueue, TopicExchange sagaExchange) {
+        return BindingBuilder.bind(transactionPaymentQueue)
+                .to(sagaExchange)
+                .with(paymentFailedRK);
     }
 
     @Bean

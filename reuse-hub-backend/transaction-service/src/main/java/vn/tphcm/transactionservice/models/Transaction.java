@@ -99,6 +99,12 @@ public class Transaction extends AbstractEntity<String> implements Serializable 
 
     private String reason;
 
+    @Column(name = "shipped_at")
+    private LocalDateTime shippedAt;
+
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
+
+    @Column(name = "feedback_submitted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean feedbackSumitted = false;
 }

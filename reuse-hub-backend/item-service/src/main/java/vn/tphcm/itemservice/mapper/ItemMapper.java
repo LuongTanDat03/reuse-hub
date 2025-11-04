@@ -27,14 +27,11 @@ import vn.tphcm.itemservice.models.Item;
 public interface ItemMapper {
     GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
-    @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "viewCount", ignore = true)
     @Mapping(target = "commentCount", ignore = true)
     @Mapping(target = "likeCount", ignore = true)
     @Mapping(target = "itemInteractions", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "location", source = "locationRequest", qualifiedByName = "locationRequestToPoint")
     Item toItem(ItemCreationRequest request);
 
@@ -42,13 +39,10 @@ public interface ItemMapper {
     ItemResponse toResponse(Item item);
     
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "viewCount", ignore = true)
     @Mapping(target = "commentCount", ignore = true)
     @Mapping(target = "likeCount", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "location", source = "location", qualifiedByName = "locationRequestToPoint")
     void updateItem(@MappingTarget Item item, ItemUpdateRequest request);
 

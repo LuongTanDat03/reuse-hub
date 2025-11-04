@@ -12,10 +12,8 @@ package vn.tphcm.itemservice.services;
  */
 
 import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Service;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
 
-@Service
 public interface CacheService {
     // Cache single item
     void cacheItem(String itemId, ItemResponse response);
@@ -36,7 +34,7 @@ public interface CacheService {
 
     Page<ItemResponse> getCachedUserItems(String userId, int page, int size, String sortBy, String sortDirection);
 
-    void incrementItemViewCount(String itemId);
+    Long incrementItemViewCount(String itemId);
 
     void evictAllUserItems(String userId);
 

@@ -12,12 +12,13 @@ package vn.tphcm.itemservice.services;
  */
 
 import vn.tphcm.event.dto.EventMessage;
-import org.springframework.stereotype.Service;
+import vn.tphcm.event.dto.ItemReservationEvent;
 import vn.tphcm.event.dto.NotificationMessage;
 
-@Service
 public interface MessageProducer {
     void publishItemEvent(EventMessage event);
 
     void publishNotification(NotificationMessage notification);
+
+    void publishItemReservationResult(ItemReservationEvent event);
 }

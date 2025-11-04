@@ -14,6 +14,7 @@ package vn.tphcm.itemservice.services;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import vn.tphcm.event.dto.FeedbackEvent;
 import vn.tphcm.itemservice.commons.ItemStatus;
 import vn.tphcm.itemservice.dtos.ApiResponse;
 import vn.tphcm.itemservice.dtos.request.ItemCreationRequest;
@@ -25,8 +26,6 @@ import vn.tphcm.itemservice.models.ItemComment;
 
 import java.util.List;
 
-
-@Service
 public interface ItemService {
     ApiResponse<ItemResponse> createItem(ItemCreationRequest request, String userId, List<MultipartFile> images);
 
@@ -50,13 +49,11 @@ public interface ItemService {
 
     ApiResponse<Page<ItemResponse>> getItemsByCategory(String category, int pageNo, int pageSize, String sortBy, String sortDirection);
 
-    ApiResponse<Page<ItemResponse>> getItemComments(String itemId, int pageNo, int pageSize);
-
-    ApiResponse<ItemResponse> submitItemFeedback(String itemId, String userId, int rating, String comment);
+    ApiResponse<Page<CommentResponse>> getItemComments(String itemId, int pageNo, int pageSize, String sortBy, String sortDirection);
 
     ApiResponse<ItemResponse> getItemFeignById(String itemId);
 
-    ApiResponse<ItemResponse> updateItemStatusFeign(String itemId, ItemStatus status);
+    void processItemBoost(String itemId);
 
-
+    void processNewFeedback(FeedbackEvent event);
 }

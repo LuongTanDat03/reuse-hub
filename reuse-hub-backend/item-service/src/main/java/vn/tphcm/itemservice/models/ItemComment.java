@@ -11,10 +11,7 @@ package vn.tphcm.itemservice.models;
  */
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 
@@ -24,6 +21,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Table(name = "tbl_item_comments")
 @Entity
+@Builder
 public class ItemComment extends AbstractEntity<String> implements Serializable {
     private String comment;
     private String userId;

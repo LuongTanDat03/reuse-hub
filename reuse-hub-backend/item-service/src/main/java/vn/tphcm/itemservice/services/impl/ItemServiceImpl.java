@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.tphcm.event.dto.EventMessage;
+import vn.tphcm.event.dto.FeedbackEvent;
 import vn.tphcm.event.dto.NotificationMessage;
 import vn.tphcm.itemservice.commons.InteractionType;
 import vn.tphcm.itemservice.commons.ItemStatus;
@@ -32,9 +33,13 @@ import vn.tphcm.itemservice.dtos.response.ImageUploadResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
 import vn.tphcm.itemservice.exceptions.InvalidDataException;
 import vn.tphcm.itemservice.exceptions.ResourceNotFoundException;
+import vn.tphcm.itemservice.mapper.ItemCommentMapper;
 import vn.tphcm.itemservice.mapper.ItemMapper;
+import vn.tphcm.itemservice.mapper.ItemRatingMapper;
 import vn.tphcm.itemservice.models.Item;
+import vn.tphcm.itemservice.models.ItemComment;
 import vn.tphcm.itemservice.models.ItemInteraction;
+import vn.tphcm.itemservice.models.ItemRating;
 import vn.tphcm.itemservice.repositories.ItemCommentRepository;
 import vn.tphcm.itemservice.repositories.ItemInteractionRepository;
 import vn.tphcm.itemservice.repositories.ItemRatingRepository;
@@ -57,6 +62,8 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final ItemInteractionRepository itemInteractionRepository;
     private final ItemMapper itemMapper;
+    private final ItemCommentMapper itemCommentMapper;
+    private final ItemRatingMapper itemRatingMapper;
     private final CacheService cacheService;
     private final MessageProducer messageProducer;
     private final SupabaseStorageService storageService;
@@ -179,22 +186,15 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ApiResponse<ItemResponse> getItemById(String itemId, String currentUserId) {
         ItemResponse cachedItem = cacheService.getCachedItem(itemId);
-
-        Item item = getItemIfExists(itemId);
-
-        if (cachedItem != null && currentUserId != null && !cachedItem.getUserId().equals(currentUserId)) {
-            cacheService.incrementItemViewCount(itemId);
-
-            log.info("Returning cached item with id: {} for userId: {}", itemId, currentUserId);
-
-            cachedItem.setViewCount(cachedItem.getViewCount() + 1);
-
-            countView(item, currentUserId);
-
-            cacheService.cacheItem(itemId, cachedItem);
-
-            publishViewCount(cachedItem, currentUserId);
-
+        if (cachedItem != null){
+            log.info("Cache Hit:Returning cached item with id: {}", itemId);
+            if (currentUserId != null && !cachedItem.getUserId().equals(currentUserId)) {
+                Long newViewCount = cacheService.incrementItemViewCount(itemId);
+                if (newViewCount != null) {
+                    cachedItem.setViewCount(newViewCount.intValue());
+                }
+                publishViewCount(cachedItem, currentUserId);
+            }
             return ApiResponse.<ItemResponse>builder()
                     .message("Item fetched by Id successfully")
                     .status(OK.value())
@@ -202,6 +202,8 @@ public class ItemServiceImpl implements ItemService {
                     .timestamp(OffsetDateTime.now())
                     .build();
         }
+
+        Item item = getItemIfExists(itemId);
 
         if (currentUserId != null && !item.getUserId().equals(currentUserId)) {
             log.info("Incrementing view count for item with id: {}", itemId);
@@ -469,24 +471,27 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ApiResponse<Page<ItemResponse>> getItemComments(String itemId, int pageNo, int pageSize) {
+    public ApiResponse<Page<CommentResponse>> getItemComments(String itemId, int pageNo, int pageSize, String sortBy, String sortDirection) {
+        log.info("Fetching comments for item with id: {}", itemId);
 
+        if (!itemRepository.existsById(itemId)) {
+            throw new ResourceNotFoundException("Item not found");
+        }
 
-        return null;
-    }
+        Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
 
-    @Override
-    public ApiResponse<ItemResponse> submitItemFeedback(String itemId, String userId, int rating, String comment) {
-        Item item = getItemIfExists(itemId);
+        Page<ItemComment> commentsPage = itemCommentRepository.findByItemId(itemId, pageable);
 
+        Page<CommentResponse> responsePage = commentsPage.map(itemCommentMapper::toCommentResponse);
 
-
-        return ApiResponse.<ItemResponse>builder()
+        return ApiResponse.<Page<CommentResponse>>builder()
                 .status(OK.value())
-                .data()
-                .message("Item feedback submitted successfully")
+                .message("Item comments fetched successfully")
+                .data(responsePage)
+                .timestamp(OffsetDateTime.now())
                 .build();
     }
+
 
     @Override
     public ApiResponse<ItemResponse> getItemFeignById(String itemId) {
@@ -501,20 +506,63 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ApiResponse<ItemResponse> updateItemStatusFeign(String itemId, ItemStatus status) {
+    public void processItemBoost(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            log.error("SAGA: Invalid itemId for boost: {}", itemId);
+            return;
+        }
+
+        log.info("SAGA: Processing item boost for itemId: {}", itemId);
         Item item = getItemIfExists(itemId);
 
-        item.setStatus(status);
-        itemRepository.save(item);
+        item.setPremium(true);
+        Item savedItem = itemRepository.save(item);
 
-        return ApiResponse.<ItemResponse>builder()
-                .status(OK.value())
-                .message("Item status updated successfully")
-                .data(itemMapper.toResponse(item))
-                .timestamp(OffsetDateTime.now())
-                .build();
+        log.info("SAGA: Item {} successfully boosted ", savedItem.getId());
+
+
+        cacheService.cacheItem(itemId, itemMapper.toResponse(savedItem));
+        cacheService.evictAllItems();
+        cacheService.evictCachedPopularItems();
     }
 
+    @Override
+    @Transactional
+    public void processNewFeedback(FeedbackEvent event) {
+        log.info("SAGA: Processing new feedback event for itemId: {}", event.getItemId());
+
+        Item item = getItemIfExists(event.getItemId());
+
+        ItemRating rating = ItemRating.builder()
+                .item(item)
+                .userId(event.getReviewerId())
+                .rating(event.getRating())
+                .build();
+
+        itemRatingRepository.save(rating);
+
+        if (event.getComment() != null && !event.getComment().isBlank()) {
+            ItemComment comment = ItemComment.builder()
+                    .item(item)
+                    .userId(event.getReviewerId())
+                    .comment(event.getComment())
+                    .build();
+
+            itemCommentRepository.save(comment);
+        }
+
+        Integer totalRatings = itemRatingRepository.countRatingsByItemId(item.getId());
+        Double averageRating = itemRatingRepository.calculateAverageRating(item.getId());
+        long commentCount = itemCommentRepository.countByItemId(item.getId());
+
+        Item savedItem = itemRepository.save(item);
+        log.info("SAGA: Updated item {} with new rating info. Total Ratings: {}, Average Rating: {}, Comment Count: {}",
+                savedItem.getId(), totalRatings, averageRating, commentCount);
+
+        cacheService.cacheItem(item.getId(), itemMapper.toResponse(savedItem));
+
+        invalidateCachesOnItemChange(item.getUserId());
+    }
 
 
     private Item getItemIfExists(String itemId) {

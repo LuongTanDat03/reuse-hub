@@ -13,13 +13,14 @@ package vn.tphcm.transactionservice.services.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.tphcm.event.common.EventType;
-import vn.tphcm.event.dto.NotificationMessage;
-import vn.tphcm.event.dto.TransactionEventMessage;
-import vn.tphcm.event.dto.TransactionUpdateEvent;
+import vn.tphcm.event.dto.*;
 import vn.tphcm.transactionservice.client.ItemServiceClient;
 import vn.tphcm.transactionservice.commons.ItemStatus;
 import vn.tphcm.transactionservice.commons.TransactionStatus;
@@ -32,10 +33,12 @@ import vn.tphcm.transactionservice.exceptions.InvalidDataException;
 import vn.tphcm.transactionservice.mappers.TransactionMapper;
 import vn.tphcm.transactionservice.models.Transaction;
 import vn.tphcm.transactionservice.repositories.TransactionRepository;
+import vn.tphcm.transactionservice.services.CacheService;
 import vn.tphcm.transactionservice.services.MessageProducer;
 import vn.tphcm.transactionservice.services.TransactionService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.CREATED;
@@ -49,6 +52,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final MessageProducer messagePublisher;
     private final ItemServiceClient itemServiceClient;
     private final TransactionMapper transactionMapper;
+    private final CacheService cacheService;
 
     @Override
     @Transactional
@@ -60,8 +64,9 @@ public class TransactionServiceImpl implements TransactionService {
 
         ApiResponse<ItemResponse> response = itemServiceClient.getItemById(request.getItemId());
 
+        ItemResponse item;
         try {
-            ItemResponse item = response.getData();
+            item = response.getData();
             if (item == null) {
                 log.error("Item with ID {} not found in item-service", request.getItemId());
                 throw new InvalidDataException("Item not found. Please check the item ID and try again.");
@@ -81,19 +86,19 @@ public class TransactionServiceImpl implements TransactionService {
             throw new InvalidDataException("Failed to retrieve item information. Please try again later.");
         }
 
-        String itemImageUrl = (response.getData().getImages() != null && !response.getData().getImages().isEmpty())
-                ? response.getData().getImages().get(0)
+        String itemImageUrl = (item.getImages() != null && !item.getImages().isEmpty())
+                ? item.getImages().get(0)
                 : null;
 
-        Long totalAmount = response.getData().getPrice() * request.getQuantity();
+        Long totalAmount = item.getPrice() * request.getQuantity();
 
         Transaction transaction = Transaction.builder()
                 .itemId(request.getItemId())
-                .itemTitle(response.getData().getTitle())
+                .itemTitle(item.getTitle())
                 .itemImageUrl(itemImageUrl)
-                .itemPrice(response.getData().getPrice())
+                .itemPrice(item.getPrice())
                 .buyerId(userId)
-                .sellerId(response.getData().getUserId())
+                .sellerId(item.getUserId())
                 .status(TransactionStatus.PENDING)
                 .type(request.getTransactionType())
                 .quantity(request.getQuantity())
@@ -109,29 +114,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction = transactionRepository.save(transaction);
         log.info("Transaction {} created in database", transaction.getId());
 
-        try {
-            itemServiceClient.updateItemStatus(request.getItemId(), ItemStatus.RESERVED);
-            log.info("Item {} status updated to RESERVED in item-service", request.getItemId());
-        } catch (Exception e){
-            log.error("Failed to update item {} status to RESERVED in item-service: {}", request.getItemId(), e.getMessage());
-        }
-
         publishTransactionEvent(transaction, EventType.CREATED, "Transaction created and pending payment.");
-        publishTransactionUpdate(transaction, TransactionStatus.PENDING, "Transaction created.");
-
-        NotificationMessage notification = NotificationMessage.builder()
-                .notificationId(UUID.randomUUID().toString())
-                .recipientUserId(response.getData().getUserId())
-                .title("New Transaction Created")
-                .message("A new transaction has been created for your item: " + response.getData())
-                .type(EventType.CREATED)
-                .itemId(request.getItemId())
-                .transactionId(transaction.getId())
-                .build();
-
-        messagePublisher.publishNotification(notification);
-
-        log.info("Transaction {} created successfully by user {}", transaction.getId(), userId);
 
         return ApiResponse.<TransactionResponse>builder()
                 .status(CREATED.value())
@@ -141,7 +124,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public ApiResponse<TransactionResponse> completeTransaction(String userId, String transactionId, TransactionStatus status) {
+    @Transactional
+    public ApiResponse<TransactionResponse> completeTransaction(String userId, String transactionId) {
         Transaction transaction = getTransactionIfExists(transactionId);
 
         if (!transaction.getBuyerId().equals(userId)){
@@ -155,26 +139,18 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         TransactionStatus oldStatus = transaction.getStatus();
-
         transaction.setStatus(TransactionStatus.COMPLETED);
         transaction.setCompletedAt(LocalDateTime.now());
         transaction = transactionRepository.save(transaction);
 
-        try {
-            itemServiceClient.updateItemStatus(transaction.getItemId(), ItemStatus.SOLD);
-            log.info("Item {} status updated to SOLD in item-service after transaction {} completion", transaction.getItemId(), transactionId);
-        } catch (Exception e){
-            log.error("Failed to update item {} status to SOLD in item-service: {}", transaction.getItemId(), e.getMessage());
-        }
-
         publishTransactionEvent(transaction, EventType.COMPLETED, "Transaction completed successfully.");
-        publishTransactionUpdate(transaction, oldStatus, "Transaction completed.");
+        publishTransactionUpdate(transaction, oldStatus, "Transaction completed");
 
         NotificationMessage notification = NotificationMessage.builder()
                 .notificationId(UUID.randomUUID().toString())
                 .recipientUserId(transaction.getSellerId())
                 .title("Transaction Completed")
-                .message("The transaction for your item " + transaction.getItemTitle() + " has been completed.")
+                .message("The transaction for your item '" + transaction.getItemTitle() + "' has been completed by the buyer.")
                 .type(EventType.COMPLETED)
                 .itemId(transaction.getItemId())
                 .transactionId(transaction.getId())
@@ -192,17 +168,22 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional
     public ApiResponse<TransactionResponse> cancelTransaction(String userId, String transactionId, String reason) {
         Transaction transaction = getTransactionIfExists(transactionId);
 
-        if (!transaction.getBuyerId().equals(userId) && !transaction.getSellerId().equals(userId)){
-            log.error("User {} is not authorized to cancel transaction {}", userId, transactionId);
-            throw new InvalidDataException("You are not authorized to cancel this transaction.");
+         boolean isBuyer = transaction.getBuyerId().equals(userId);
+        boolean isSeller = transaction.getSellerId().equals(userId);
+        boolean isSystem = userId.equals("SYSTEM");
+
+        if (!isBuyer && !isSeller && !isSystem){
+            log.error("User {} is not authorized to update transaction {}", userId, transactionId);
+            throw new InvalidDataException("You are not authorized to update this transaction.");
         }
 
         if (transaction.getStatus() == TransactionStatus.COMPLETED || transaction.getStatus() == TransactionStatus.CANCELLED){
-            log.error("Transaction {} cannot be cancelled as it is already {}", transactionId, transaction.getStatus());
-            throw new InvalidDataException("Transaction cannot be cancelled in its current status.");
+            log.error("Transaction {} cannot be updated as it is already {}", transactionId, transaction.getStatus());
+            throw new InvalidDataException("Transaction cannot be updated in its current status.");
         }
 
         TransactionStatus oldStatus = transaction.getStatus();
@@ -212,30 +193,26 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setCancelledAt(LocalDateTime.now());
         transaction.setReason(reason);
         transaction = transactionRepository.save(transaction);
+        log.info("Transaction {} cancelled successfully by user {}", transactionId, userId);
 
-        try {
-            itemServiceClient.updateItemStatus(transaction.getItemId(), ItemStatus.AVAILABLE);
-            log.info("Item {} status updated to AVAILABLE in item-service after transaction {} cancellation", transaction.getItemId(), transactionId);
-        } catch (Exception e){
-            log.error("Failed to update item {} status to AVAILABLE in item-service: {}", transaction.getItemId(), e.getMessage());
+        if (oldStatus == TransactionStatus.PENDING) {
+             publishTransactionEvent(transaction, EventType.CANCELLED, "Transaction has been cancelled. Reason: " + reason);
         }
 
-        publishTransactionEvent(transaction, EventType.CANCELLED, "Transaction has been cancelled.");
         publishTransactionUpdate(transaction, oldStatus, "Transaction cancelled.");
 
-        NotificationMessage notification = NotificationMessage.builder()
+        if (!isSystem) {
+             NotificationMessage notification = NotificationMessage.builder()
                 .notificationId(UUID.randomUUID().toString())
-                .recipientUserId(transaction.getBuyerId().equals(userId) ? transaction.getSellerId() : transaction.getBuyerId())
+                .recipientUserId(isBuyer ? transaction.getSellerId() : transaction.getBuyerId())
                 .title("Transaction Cancelled")
-                .message("The transaction for item " + transaction.getItemTitle() + " has been cancelled. Reason: " + reason)
+                .message("The transaction for item '" + transaction.getItemTitle() + "' has been cancelled. Reason: " + reason)
                 .type(EventType.CANCELLED)
                 .itemId(transaction.getItemId())
                 .transactionId(transaction.getId())
                 .build();
-
-        messagePublisher.publishNotification(notification);
-
-        log.info("Transaction {} cancelled successfully by user {}", transactionId, userId);
+            messagePublisher.publishNotification(notification);
+        }
 
         return ApiResponse.<TransactionResponse>builder()
                 .status(OK.value())
@@ -245,22 +222,24 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional
     public ApiResponse<TransactionResponse> updateTransactionStatus(String userId, String transactionId, TransactionStatus status) {
         Transaction transaction = getTransactionIfExists(transactionId);
 
         if (!transaction.getSellerId().equals(userId)){
-            log.error("User {} is not authorized to update transaction {}", userId, transactionId);
-            throw new InvalidDataException("You are not authorized to update this transaction.");
+            log.error("User {} is not authorized to update status for transaction {}", userId, transactionId);
+            throw new InvalidDataException("You are not authorized to update this transaction's status.");
         }
 
         TransactionStatus oldStatus = transaction.getStatus();
 
         if (status == TransactionStatus.DELIVERY){
-            transaction.setDeliveryTrackingCode(UUID.randomUUID().toString());
+            transaction.setShippedAt(LocalDateTime.now());
         }
 
         transaction.setStatus(status);
         transaction = transactionRepository.save(transaction);
+        log.info("Transaction {} status updated to {} by user {}", transactionId, status, userId);
 
         publishTransactionEvent(transaction, EventType.UPDATED, "Transaction status updated to " + status);
         publishTransactionUpdate(transaction, oldStatus, "Transaction status updated to " + status);
@@ -269,15 +248,13 @@ public class TransactionServiceImpl implements TransactionService {
                 .notificationId(UUID.randomUUID().toString())
                 .recipientUserId(transaction.getBuyerId())
                 .title("Transaction Status Updated")
-                .message("The status of your transaction for item " + transaction.getItemTitle() + " has been updated to " + status)
+                .message("The status of your transaction for item '" + transaction.getItemTitle() + "' has been updated to " + status + ".")
                 .type(EventType.UPDATED)
                 .itemId(transaction.getItemId())
                 .transactionId(transaction.getId())
                 .build();
 
         messagePublisher.publishNotification(notification);
-
-        log.info("Transaction {} status updated to {} by user {}", transactionId, status, userId);
 
         return ApiResponse.<TransactionResponse>builder()
                 .status(OK.value())
@@ -287,17 +264,105 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional
     public ApiResponse<TransactionResponse> confirmDelivery(String userId, String transactionId, String trackingCode) {
-        return null;
+        Transaction transaction = getTransactionIfExists(transactionId);
+
+        if (!transaction.getSellerId().equals(userId)){
+            log.error("User {} is not authorized to confirm delivery for transaction {}", userId, transactionId);
+            throw new InvalidDataException("You are not authorized to confirm delivery for this transaction.");
+        }
+
+        TransactionStatus oldStatus = transaction.getStatus();
+        transaction.setStatus(TransactionStatus.DELIVERY);
+        transaction.setDeliveryTrackingCode(trackingCode);
+        transaction.setShippedAt(LocalDateTime.now());
+        transaction = transactionRepository.save(transaction);
+        log.info("Transaction {} delivery confirmed by user {}", transactionId, userId);
+
+        publishTransactionEvent(transaction, EventType.UPDATED, "Delivery confirmed for transaction.");
+        publishTransactionUpdate(transaction, oldStatus, "Delivery confirmed.");
+
+        NotificationMessage notification = NotificationMessage.builder()
+                .notificationId(UUID.randomUUID().toString())
+                .recipientUserId(transaction.getSellerId())
+                .title("Delivery Confirmed")
+                .message("The buyer has confirmed delivery for your item '" + transaction.getItemTitle() + "'.")
+                .type(EventType.UPDATED)
+                .itemId(transaction.getItemId())
+                .transactionId(transaction.getId())
+                .build();
+
+        messagePublisher.publishNotification(notification);
+
+        return ApiResponse.<TransactionResponse>builder()
+                .status(OK.value())
+                .data(transactionMapper.toResponse(transaction))
+                .message("Delivery confirmed successfully.")
+                .build();
     }
 
     @Override
+    @Transactional
     public ApiResponse<TransactionResponse> submitFeedback(String userId, String transactionId, String comment, Double rating) {
-        return null;
+        Transaction transaction = getTransactionIfExists(transactionId);
+
+        if (!transaction.getBuyerId().equals(userId)){
+            log.error("User {} is not authorized to submit feedback for transaction {}", userId, transactionId);
+            throw new InvalidDataException("You are not authorized to submit feedback for this transaction.");
+        }
+
+        if (transaction.getStatus() != TransactionStatus.COMPLETED){
+            log.error("Transaction {} is not completed. Current status: {}", transactionId, transaction.getStatus());
+            throw new InvalidDataException("Feedback can only be submitted for completed transactions.");
+        }
+
+        if (transaction.isFeedbackSumitted()){
+            log.error("Feedback for transaction {} has already been submitted", transactionId);
+            throw new InvalidDataException("Feedback has already been submitted for this transaction.");
+        }
+
+        transaction.setFeedbackSumitted(true);
+        transactionRepository.save(transaction);
+
+        log.info("Feedback for transaction {} submitted by user {}", transactionId, userId);
+
+        FeedbackEvent event = FeedbackEvent.builder()
+                .transactionId(transaction.getId())
+                .itemId(transaction.getItemId())
+                .reviewerId(transaction.getSellerId())
+                .rating(rating)
+                .comment(comment)
+                .build();
+
+        messagePublisher.publishFeedbackEvent(event);
+
+        NotificationMessage notification = NotificationMessage.builder()
+                .notificationId(UUID.randomUUID().toString())
+                .recipientUserId(transaction.getSellerId())
+                .title("New Feedback Received")
+                .message("You have received new feedback for your item '" + transaction.getItemTitle() + "'.")
+                .type(EventType.FEEDBACK_SUBMITTED)
+                .itemId(transaction.getItemId())
+                .transactionId(transaction.getId())
+                .build();
+
+        messagePublisher.publishNotification(notification);
+
+        return ApiResponse.<TransactionResponse>builder()
+                .status(OK.value())
+                .data(transactionMapper.toResponse(transaction))
+                .message("Feedback submitted successfully.")
+                .build();
     }
 
     @Override
     public ApiResponse<Page<TransactionResponse>> getTransactionByBuyerId(String userId, int page, int size, String sortBy, String sortDirection) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDirection);
+
+        Page<Transaction> transaction = transactionRepository.findByBuyerIdOrderByCreatedAtDesc(userId, pageable);
+
+
         return null;
     }
 
@@ -332,17 +397,68 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public ApiResponse<TransactionResponse> submitFeedback(String userId, String transactionId) {
-        return null;
+    @Scheduled(fixedRate = 300000)
+    @Transactional
+    public void processExpiredTransaction() {
+        List<TransactionStatus> expirableStatuses = List.of(TransactionStatus.PENDING);
+
+        List<Transaction> expiredTransactions = transactionRepository.findByStatusInAndExpiresAtBefore(expirableStatuses, LocalDateTime.now());
+
+        if (expiredTransactions.isEmpty()) {
+            log.info("No expired transactions found to process.");
+            return;
+        }
+
+        for (Transaction transaction : expiredTransactions) {
+            try {
+                cancelTransaction("SYSTEM", transaction.getId(), "Transaction expired due to non-payment.");
+                log.info("Expired transaction {} has been cancelled by system.", transaction.getId());
+            } catch (Exception e) {
+                log.error("Failed to cancel expired transaction {}: {}", transaction.getId(), e.getMessage());
+            }
+            log.info("Expired transaction {} has been cancelled.", transaction.getId());
+        }
     }
 
     @Override
-    @Scheduled(fixedDate = 360000)
     @Transactional
-    public void processExpiredTransaction() {
-        Transaction transaction = transactionRepository.
-    }
+    public void processPaymentResult(PaymentEvent event) {
+        if (event.getLinkedTransactionId() == null){
+            log.error("Payment event {} does not have a linked transaction ID.", event.getEventId());
+            return;
+        }
 
+        String transactionId = event.getLinkedTransactionId();
+        Transaction transaction = getTransactionIfExists(transactionId);
+
+        if (event.getMessage() != null) {
+            log.warn("SAGA: Received PAYMENT_FAILED event for transaction {}. Reason: {}",
+                     transactionId, event.getMessage());
+
+            if (transaction.getStatus() == TransactionStatus.PAYMENT_PENDING) {
+                cancelTransaction("SYSTEM", transactionId, "Payment failed: " + event.getMessage());
+            }
+            return;
+        }
+
+        log.info("SAGA: Received PAYMENT_COMPLETED event for transaction {}", transactionId);
+        if (transaction.getStatus() == TransactionStatus.PENDING) {
+            TransactionStatus oldStatus = transaction.getStatus();
+            transaction.setStatus(TransactionStatus.PAYMENT_PENDING);
+            transaction = transactionRepository.save(transaction);
+
+            NotificationMessage notification = NotificationMessage.builder()
+                    .notificationId(UUID.randomUUID().toString())
+                    .recipientUserId(transaction.getSellerId())
+                    .title("Payment Received!")
+                    .message("Payment for item '" + transaction.getItemTitle() + "' has been received. Please prepare for delivery.")
+                    .type(EventType.UPDATED)
+                    .itemId(transaction.getItemId())
+                    .transactionId(transaction.getId())
+                    .build();
+            messagePublisher.publishNotification(notification);
+        }
+    }
 
     private void publishTransactionEvent(Transaction transaction, EventType type, String message){
         TransactionEventMessage event = TransactionEventMessage.builder()
@@ -377,5 +493,13 @@ public class TransactionServiceImpl implements TransactionService {
             log.error("Transaction {} not found", transactionId);
             return new InvalidDataException("Transaction not found.");
         });
+    }
+
+    private Pageable createPageable(int pageNo, int pageSize, String sortBy, String sortDirection) {
+        Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection)
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+        Sort sort = Sort.by(direction, sortBy != null ? sortBy : "createdAt");
+        return PageRequest.of(pageNo, pageSize, sort);
     }
 }

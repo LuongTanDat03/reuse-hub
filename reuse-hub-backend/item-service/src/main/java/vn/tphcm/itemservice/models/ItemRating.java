@@ -11,10 +11,7 @@ package vn.tphcm.itemservice.models;
  */
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 
@@ -24,9 +21,10 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Entity(name = "tbl_ratings")
 @Table
+@Builder
 public class ItemRating extends AbstractEntity<String> implements Serializable {
     private String userId;
-    private int rating;
+    private Double rating;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "item_id")

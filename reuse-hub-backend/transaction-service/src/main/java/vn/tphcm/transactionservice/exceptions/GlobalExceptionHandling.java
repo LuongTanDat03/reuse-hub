@@ -18,7 +18,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import vn.tphcm.identityservice.exceptions.InvalidDataException;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Date;
