@@ -34,7 +34,7 @@ public class ItemResponse {
 
     private List<String> tags;
 
-    private String category;
+    private String address;
 
     private LocationResponse location;
 
@@ -51,4 +51,8 @@ public class ItemResponse {
     private List<CommentResponse> comments;
 
     private List<RatingResponse> ratings;
+
+    private String category;
+
+    private String categorySlug;
 }

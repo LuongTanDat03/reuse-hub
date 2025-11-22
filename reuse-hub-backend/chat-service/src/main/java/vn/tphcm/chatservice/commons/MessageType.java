@@ -11,5 +11,14 @@ package vn.tphcm.chatservice.commons;
  */
 
 public enum MessageType {
-    TEXT, IMAGE, VIDEO, AUDIO, FILE, EMOJI, LOCATION, CONTACT, STICKER, GIF
+    TEXT,
+    IMAGE,
+    VIDEO,
+    AUDIO,
+    FILE,
+    EMOJI,
+    LOCATION,
+    CONTACT,
+    STICKER,
+    GIF
 }

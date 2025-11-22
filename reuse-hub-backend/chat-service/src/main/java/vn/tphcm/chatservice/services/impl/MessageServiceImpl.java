@@ -17,23 +17,26 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.tphcm.chatservice.commons.MessageStatus;
-import vn.tphcm.chatservice.commons.MessageType;
 import vn.tphcm.chatservice.dtos.ApiResponse;
+import vn.tphcm.chatservice.dtos.PageResponse;
 import vn.tphcm.chatservice.dtos.request.SendMessageRequest;
 import vn.tphcm.chatservice.dtos.response.MessageResponse;
+import vn.tphcm.chatservice.exceptions.InvalidDataException;
 import vn.tphcm.chatservice.exceptions.ResourceNotFoundException;
 import vn.tphcm.chatservice.mapper.MessageMapper;
 import vn.tphcm.chatservice.models.Conversation;
 import vn.tphcm.chatservice.models.Message;
 import vn.tphcm.chatservice.repositories.ConversationRepository;
 import vn.tphcm.chatservice.repositories.MessageRepository;
-import vn.tphcm.chatservice.services.CacheService;
 import vn.tphcm.chatservice.services.MessagePublisher;
 import vn.tphcm.chatservice.services.MessageService;
-import vn.tphcm.event.dto.MessageEvent;
+import vn.tphcm.event.commons.EventType;
+import vn.tphcm.event.dto.NotificationMessage;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.OK;
 
@@ -43,97 +46,96 @@ import static org.springframework.http.HttpStatus.OK;
 public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
-    private final CacheService cacheService;
     private final MessageMapper messageMapper;
     private final MessagePublisher messagePublisher;
 
     @Override
-    public ApiResponse<MessageResponse> sendMessage(SendMessageRequest request, String senderId) {
-        Conversation conversation = conversationRepository
-                .findByIdAndUserId(request.getConversationId(), senderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found or access denied"));
+    public ApiResponse<MessageResponse> sendMessage(SendMessageRequest request) {
+        log.info("Sending message from {} to conversation {}", request.getSenderId(), request.getRecipientId());
 
-        Message message = messageMapper.toMessage(request);
+        List<Conversation> conversations = conversationRepository
+                .findByParticipantIds(request.getSenderId(), request.getRecipientId());
+        
+        if (conversations.isEmpty()) {
+            throw new ResourceNotFoundException("Conversation not found or access denied");
+        }
+        
+        Conversation conversation = conversations.get(0);
 
-        message.setConversationId(request.getConversationId());
-        message.setSenderId(senderId);
-        message.setContent(request.getContent());
-        message.setReplyToMessageId(request.getReplyToMessageId());
-        message.setStatus(MessageStatus.SENT);
-        message.setType(MessageType.TEXT);
-
-        messageRepository.save(message);
-
-        conversation.setLastMessageId(String.valueOf(message.getId()));
-        conversation.setLastActivity(LocalDateTime.now());
-        conversationRepository.save(conversation);
-
-        String receiverId = conversation.getParticipants().stream()
-                .filter(p -> !p.equals(senderId))
-                .findFirst()
-                .orElse(null);
-
-        MessageResponse response = messageMapper.toResponse(message);
-        cacheService.cacheMessage(request.getConversationId(), response);
-
-        cacheService.setUserStoppedTyping(String.valueOf(conversation.getId()), senderId);
-
-        MessageEvent event = MessageEvent.builder()
-                .eventType("MESSAGE_SENT")
-                .messageId(String.valueOf(message.getId()))
-                .conversationId(String.valueOf(conversation.getId()))
-                .senderId(senderId)
-                .content(message.getContent())
-                .replyToMessageId(message.getReplyToMessageId())
+        Message message = Message.builder()
+                .conversationId(conversation.getId())
+                .senderId(request.getSenderId())
+                .recipientId(request.getRecipientId())
+                .content(request.getContent())
+                .status(MessageStatus.SENT)
                 .build();
 
-        messagePublisher.publishMessage(event);
+        messageRepository.save(message);
+        log.info("Message saved with ID: {}", message.getId());
 
-        log.info("Message sent: {} from {} to {}", message.getId(), senderId, receiverId);
+        conversation.setLastMessageId(String.valueOf(message.getId()));
+        conversation.setLastMessageTimestamp(Instant.now());
+        conversationRepository.save(conversation);
+
+        NotificationMessage notification = NotificationMessage.builder()
+                .notificationId(UUID.randomUUID().toString())
+                .recipientId(request.getRecipientId())
+                .title("New Message")
+                .content(request.getContent())
+                .type(EventType.NEW_MESSAGE)
+                .actorUserId(request.getSenderId())
+                .data(Map.of("conversationId", conversation.getId(),
+                        "senderId", request.getSenderId()))
+                .build();
+
+        messagePublisher.publishNotificationMessage(notification);
+
+        log.info("Notification published for message ID: {}", message.getId());
 
         return ApiResponse.<MessageResponse>builder()
                 .message("Send message successfully")
-                .data(response)
+                .data(messageMapper.toResponse(message))
                 .status(OK.value())
                 .build();
     }
 
     @Override
-    public ApiResponse<Page<MessageResponse>> getMessages(String conversationId, String userId, int page, int size) {
-        Conversation conversation = conversationRepository
-                .findByIdAndUserId(conversationId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found or access denied"));
+    public ApiResponse<PageResponse<MessageResponse>> getMessages(String conversationId, String userId, int page, int size) {
+        log.info("Fetching messages for conversation {} by user {}", conversationId, userId);
+
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
+
+        if (!conversation.getParticipantIds().contains(userId)){
+            log.warn("Access denied for user {} to conversation {}", userId, conversationId);
+            throw new InvalidDataException("Access denied to this conversation");
+        }
 
         Pageable pageable = createPageable(page, size);
 
-        if (cacheService.getMessage(conversationId)){
+        Page<Message> messagePage = messageRepository.findByConversationId(conversation.getId(), pageable);
 
-        }
+        Page<MessageResponse> messageResponsePage = messagePage.map(messageMapper::toResponse);
 
-        return null;
-    }
+        PageResponse<MessageResponse> pageResponse = createPageResponse(messageResponsePage);
 
-    @Override
-    public ApiResponse<MessageResponse> editMessage(String messageId, String newContent, String userId) {
-        return null;
-    }
-
-    @Override
-    public ApiResponse<MessageResponse> deleteMessage(String messageId, String userId) {
-        return null;
-    }
-
-    @Override
-    public ApiResponse<Void> markMessageAsRead(String conversationId, String userId) {
-        return null;
-    }
-
-    @Override
-    public ApiResponse<List<MessageResponse>> searchMessages(String conversationId, String userId, String keyword) {
-        return null;
+        return ApiResponse.<PageResponse<MessageResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Messages fetched successfully.")
+                .build();
     }
 
     private Pageable createPageable(int page, int size) {
         return PageRequest.of(page, size);
+    }
+
+    private <T> PageResponse<T> createPageResponse(Page<T> page) {
+        return PageResponse.<T>builder()
+                .content(page.getContent())
+                .pageNo(page.getNumber())
+                .pageSize(page.getSize())
+                .last(page.isLast())
+                .build();
     }
 }

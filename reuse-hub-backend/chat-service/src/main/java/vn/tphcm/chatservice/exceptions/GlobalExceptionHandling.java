@@ -18,10 +18,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import vn.tphcm.profileservice.exceptions.ErrorResponse;
-import vn.tphcm.profileservice.exceptions.InvalidDataException;
-import vn.tphcm.profileservice.exceptions.ResourceNotFoundException;
-import vn.tphcm.profileservice.exceptions.UploadFileFailedException;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Date;
@@ -41,7 +37,9 @@ public class GlobalExceptionHandling {
      * @param req
      * @return
      */
-    @ExceptionHandler(AccessDeniedException.class)
+    @ExceptionHandler({AccessDeniedException.class,
+            SecurityException.class
+    })
     @ApiResponses(
             @ApiResponse(responseCode = "403", description = "Forbidden",
                     content = {@Content(mediaType = APPLICATION_JSON_VALUE,
@@ -60,7 +58,7 @@ public class GlobalExceptionHandling {
                             )
                     )})
     )
-    public ErrorResponse handleAccessDeniedException(AccessDeniedException e, WebRequest req) {
+    public ErrorResponse handleForbiddenException(Exception e, WebRequest req) {
         errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(new Date());
         errorResponse.setPath(req.getDescription(false).replace("url=", ""));

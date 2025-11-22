@@ -22,7 +22,7 @@ public class ItemUpdateRequest {
 
     private List<String> tags;
 
-    private String category;
+    private String categoryId;
 
     private Long price;
 

@@ -33,6 +33,7 @@ import vn.tphcm.paymentservice.dtos.request.CreatePaymentRequest;
 import vn.tphcm.paymentservice.dtos.response.PaymentResponse;
 import vn.tphcm.paymentservice.exceptions.InvalidDataException;
 import vn.tphcm.paymentservice.exceptions.ResourceNotFoundException;
+import vn.tphcm.paymentservice.mappers.PaymentMapper;
 import vn.tphcm.paymentservice.models.Payment;
 import vn.tphcm.paymentservice.repositories.PaymentRepository;
 import vn.tphcm.paymentservice.services.MessageProducer;
@@ -48,6 +49,7 @@ import static org.springframework.http.HttpStatus.OK;
 public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final MessageProducer messageProducer;
+    private final PaymentMapper paymentMapper;
 
     @Value("${stripe.api.key}")
     private String stripeApiKey;
@@ -73,7 +75,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .putMetadata("userId", userId)
                 .putMetadata("linked_item_id", request.getLinkedItemId())
                 .putMetadata("linked_transaction_id", request.getLinkedTransactionId())
-                .addPaymentMethodType(request.getPaymentMethod().toString())
+                .addPaymentMethodType(request.getPaymentMethod())
                 .build();
 
         PaymentIntent paymentIntent = PaymentIntent.create(params);
@@ -168,6 +170,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .linkedTransactionId(payment.getLinkedTransactionId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
+                .message("Payment completed successfully.")
+                .success(true)
                 .build();
         messageProducer.publishPaymentCompletedEvent(sagaEvent);
 
@@ -201,6 +205,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .linkedItemId(payment.getLinkedItemId())
                 .linkedTransactionId(payment.getLinkedTransactionId())
                 .message(paymentIntent.getLastPaymentError().getMessage())
+                .success(false)
                 .build();
         messageProducer.publishPaymentFailedEvent(sagaEvent);
 
@@ -212,5 +217,39 @@ public class PaymentServiceImpl implements PaymentService {
                 .type("PAYMENT_FAILED")
                 .build();
         messageProducer.publishNotification(notification);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponse<PaymentResponse> getPaymentById(String paymentId, String userId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
+
+        if (!payment.getUserId().equals(userId)) {
+            throw new InvalidDataException("You do not have permission to access this payment");
+        }
+
+        return ApiResponse.<PaymentResponse>builder()
+                .status(OK.value())
+                .data(paymentMapper.toPaymentResponse(payment))
+                .message("Payment retrieved successfully")
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponse<PaymentResponse> getPaymentByTransactionId(String transactionId, String userId) {
+        Payment payment = paymentRepository.findByLinkedTransactionId(transactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found for transaction: " + transactionId));
+
+        if (!payment.getUserId().equals(userId)) {
+            throw new InvalidDataException("You do not have permission to access this payment");
+        }
+
+        return ApiResponse.<PaymentResponse>builder()
+                .status(OK.value())
+                .data(paymentMapper.toPaymentResponse(payment))
+                .message("Payment retrieved successfully")
+                .build();
     }
 }

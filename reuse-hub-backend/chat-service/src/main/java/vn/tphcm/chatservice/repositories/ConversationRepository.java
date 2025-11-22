@@ -18,19 +18,13 @@ import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 import vn.tphcm.chatservice.models.Conversation;
 
-import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ConversationRepository extends MongoRepository<Conversation, String> {
 
-    @Query("{ $or:  [{ 'userFirstId': ?0, 'userSecondId': ?1 }, { 'userFirstId': ?1, 'userSecondId': ?0 }  ]}")
-    Optional<Conversation> findByTwoUsers(String userFirstId, String userSecondId);
+    @Query(value = "{ 'participantIds': { $all: [?0, ?1] } }", sort = "{ 'createdAt': -1 }")
+    List<Conversation> findByParticipantIds(String userFirstId, String userSecondId);
 
-    @Query("{ $or:  [{'user1Id':  ?0}, {'user2Id':  ?0} ], 'status':  {$ne: ['DELETED','HIDE']} }")
-    Page<Conversation> findConversationsOfUser(String userId, Pageable pageable);
-
-    @Query("{ '_id': ?0, $or:  [{'user1Id':  ?1}, {'user2Id':  ?1} ] }")
-    Optional<Conversation> findByIdAndUserId(String conversationId, String userId);
-
-    Optional<Conversation> findByParticipantsKey(String participantsKey);
+    Page<Conversation> findByParticipantIdsContains(String userId, Pageable pageable);
 }

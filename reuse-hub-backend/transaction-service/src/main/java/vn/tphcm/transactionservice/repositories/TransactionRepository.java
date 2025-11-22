@@ -19,6 +19,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.tphcm.transactionservice.commons.TransactionStatus;
 import vn.tphcm.transactionservice.commons.TransactionType;
+import vn.tphcm.transactionservice.dtos.PageResponse;
 import vn.tphcm.transactionservice.models.Transaction;
 
 import java.time.LocalDateTime;
@@ -31,11 +32,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
 
     Page<Transaction> findBySellerIdOrderByCreatedAtDesc(String sellerId, Pageable pageable);
 
-   Page<Transaction> findByStatusOrderByCreatedAtDesc(TransactionStatus status, Pageable pageable);
+    @Query("SELECT t FROM Transaction t WHERE (t.buyerId = :userId OR t.sellerId = :userId) AND t.status = :status ORDER BY t.createdAt DESC")
+    Page<Transaction> findByUserIdAndStatusOrderByCreatedAtDesc(@Param("userId") String userId, @Param("status") TransactionStatus status, Pageable pageable);
 
-    Page<Transaction> findByTypeOrderByCreatedAtDesc(TransactionType type, Pageable pageable);
-
-    Page<Transaction> findByItemIdOrderByCreatedAtDesc(String itemId, Pageable pageable);
+    @Query("SELECT t FROM Transaction t WHERE (t.buyerId = :userId OR t.sellerId = :userId) AND t.status = :status ORDER BY t.createdAt DESC")
+    Page<Transaction> findByUserIdAndTypeOrderByCreatedAtDesc(@Param("userId") String userId, @Param("status") TransactionType type, Pageable pageable);
 
     List<Transaction> findByStatusInAndExpiresAtBefore(List<TransactionStatus> statuses, LocalDateTime expiresAt);
 
@@ -49,7 +50,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
     List<Transaction> findExpiredPendingTransactions(@Param("now") LocalDateTime now);
 
     @Query("SELECT t FROM Transaction t WHERE t.status = :status AND (t.buyerId = :userId OR t.sellerId = :userId) ORDER BY t.createdAt DESC")
-    Page<Transaction> findByUserIdAndStatus(@Param("status") TransactionStatus status, @Param("userId") String userId, Pageable pageable);
+    Page<Transaction> findByUserIdAndStatus(@Param("userId") String userId, @Param("status") TransactionStatus status, Pageable pageable);
 
     @Query("SELECT COUNT(t) > 0 FROM Transaction t " +
             "WHERE t.itemId = :itemId " +

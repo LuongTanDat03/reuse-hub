@@ -13,7 +13,7 @@ package vn.tphcm.event.dto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import vn.tphcm.event.common.EventType;
+import vn.tphcm.event.commons.EventType;
 
 @Getter
 @Setter

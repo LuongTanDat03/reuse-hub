@@ -11,5 +11,10 @@ package vn.tphcm.chatservice.commons;
  */
 
 public enum ReactionType {
-    LIKE, LOVE, LAUGH, WOW, SAD, ANGRY
+    LIKE,
+    LOVE,
+    LAUGH,
+    WOW,
+    SAD,
+    ANGRY
 }

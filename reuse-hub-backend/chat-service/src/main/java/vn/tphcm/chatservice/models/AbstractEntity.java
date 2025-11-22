@@ -10,28 +10,23 @@ package vn.tphcm.chatservice.models;
  * @date: 8/25/2025
  */
 
-import jakarta.persistence.Column;
-import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.mongodb.core.mapping.MongoId;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
-@MappedSuperclass
 public abstract class AbstractEntity<T> {
-    @MongoId
+    @Id
     private T id;
 
-    @Column(name = "created_at")
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    @CreatedDate
+    private Instant createdAt;
 
-    @Column(name = "updated_at")
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @LastModifiedDate
+    private Instant updatedAt;
 }

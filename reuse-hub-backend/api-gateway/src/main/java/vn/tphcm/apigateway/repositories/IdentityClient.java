@@ -15,12 +15,12 @@ import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.PostExchange;
 import reactor.core.publisher.Mono;
-import vn.tphcm.apigateway.dtos.request.IdentityRequest;
+import vn.tphcm.apigateway.dtos.request.IntrospectRequest;
 import vn.tphcm.apigateway.dtos.ApiResponse;
-import vn.tphcm.apigateway.dtos.response.IdentityResponse;
+import vn.tphcm.apigateway.dtos.response.IntrospectResponse;
 
 @Repository
 public interface IdentityClient {
     @PostExchange(url = "/identity/auth/introspect", contentType = MediaType.APPLICATION_JSON_VALUE)
-    Mono<ApiResponse<IdentityResponse>> introspect(@RequestBody IdentityRequest request);
+    Mono<ApiResponse<IntrospectResponse>> introspect(@RequestBody IntrospectRequest request);
 }

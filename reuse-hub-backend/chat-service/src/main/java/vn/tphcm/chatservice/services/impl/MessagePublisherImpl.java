@@ -17,25 +17,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.tphcm.chatservice.services.MessagePublisher;
 import vn.tphcm.event.dto.MessageEvent;
-import vn.tphcm.event.dto.PresenceEvent;
-import vn.tphcm.event.dto.TypingEvent;
+import vn.tphcm.event.dto.NotificationMessage;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "MESSAGE-PUBLISHER")
 public class MessagePublisherImpl implements MessagePublisher {
-
     @Value("${rabbitmq.exchange.chat}")
     private String chatExchange;
 
+    @Value("${rabbitmq.exchange.notification}")
+    private String notificationExchange;
+
+    @Value("${rabbitmq.routing-keys.notification}")
+    private String notificationRoutingKey;
     @Value("${rabbitmq.routing-keys.message}")
     private String messageRoutingKey;
-
-    @Value("${rabbitmq.routing-keys.presence}")
-    private String presenceRoutingKey;
-
-    @Value("${rabbitmq.routing-keys.typing}")
-    private String typingRoutingKey;
 
     private final RabbitTemplate rabbitTemplate;
 
@@ -50,22 +47,11 @@ public class MessagePublisherImpl implements MessagePublisher {
     }
 
     @Override
-    public void publishPresence(PresenceEvent event) {
+    public void publishNotificationMessage(NotificationMessage event) {
         try {
-            rabbitTemplate.convertAndSend(chatExchange, presenceRoutingKey, event);
-            log.info("Published presence event: {}", event);
+            rabbitTemplate.convertAndSend(notificationExchange, notificationRoutingKey, event);
         } catch (Exception e) {
-            log.error("Failed to publish presence event: {}", e.getMessage());
-        }
-    }
-
-    @Override
-    public void publishTyping(TypingEvent event) {
-        try {
-            rabbitTemplate.convertAndSend(chatExchange, typingRoutingKey, event);
-            log.info("Published typing event: {}", event);
-        } catch (Exception e) {
-            log.error("Failed to publish typing event: {}", e.getMessage());
+            log.error("Failed to publish notification message event: {}", e.getMessage());
         }
     }
 }

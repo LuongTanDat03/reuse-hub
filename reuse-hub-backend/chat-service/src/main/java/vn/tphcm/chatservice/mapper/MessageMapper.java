@@ -11,17 +11,10 @@ package vn.tphcm.chatservice.mapper;
  */
 
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import vn.tphcm.chatservice.dtos.request.SendMessageRequest;
 import vn.tphcm.chatservice.dtos.response.MessageResponse;
 import vn.tphcm.chatservice.models.Message;
 
 @Mapper(componentModel = "spring")
 public interface MessageMapper {
     MessageResponse toResponse(Message message);
-
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "contentBeforeEditOrDelete", ignore = true)
-    Message toMessage(SendMessageRequest request);
-
 }

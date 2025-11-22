@@ -223,6 +223,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         ProfileUserRequest profileEvent = profileMapper.toRegisterRequest(request);
         profileEvent.setUserId(user.getId());
+        profileEvent.setPassword(user.getPassword());
 
         messageProducer.publishProfileCreation(profileEvent);
         log.info("📨 Profile creation message sent for userId={}", user.getId());
@@ -326,7 +327,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             String username = jwtService.extractUsername(request.getToken(), TokenType.ACCESS_TOKEN);
 
-            String userId = userRepository.findByUsername(username).getId();
+            String userId = userRepository.findByUsernameOrEmail(username, username).get().getId();
 
             return ApiResponse.<IntrospectResponse>builder()
                     .status(HttpStatus.OK.value())

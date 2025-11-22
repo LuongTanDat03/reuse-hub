@@ -31,13 +31,6 @@ spring:
               filters:
                 - StripPrefix=2
 
-            - id: user-service
-              uri: lb://user-service
-              predicates:
-                - Path=${app.api-prefix}/users/**
-              filters:
-                - StripPrefix=2
-
             - id: item-service
               uri: lb://item-service
               predicates:
@@ -67,9 +60,9 @@ spring:
                 - StripPrefix=2
 
             - id: payment-service
-              uri: lb://admin-service
+              uri: lb://payment-service
               predicates:
-                - Path=${app.api-prefix}/admin/**
+                - Path=${app.api-prefix}/payments/**
               filters:
                 - StripPrefix=2
 

@@ -14,13 +14,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import vn.tphcm.itemservice.dtos.PageResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
 import vn.tphcm.itemservice.services.CacheService;
 
 import java.time.Duration;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -78,7 +79,7 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public void cachePopularItems(Page<ItemResponse> items) {
+    public void cachePopularItems(PageResponse<ItemResponse> items) {
         try {
             redisTemplate.opsForValue().set(POPULAR_ITEMS_KEY, items, POPULAR_ITEMS_TTL);
             log.info("Cached popular items with key {}", POPULAR_ITEMS_KEY);
@@ -88,12 +89,12 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public Page<ItemResponse> getCachedPopularItems() {
+    public PageResponse<ItemResponse> getCachedPopularItems() {
         try {
             Object cached = redisTemplate.opsForValue().get(POPULAR_ITEMS_KEY);
             if (cached != null) {
                 log.info("Cache hit for popular items with key {}", POPULAR_ITEMS_KEY);
-                return objectMapper.convertValue(cached, new TypeReference<Page<ItemResponse>>() {});
+                return objectMapper.convertValue(cached, new TypeReference<PageResponse<ItemResponse>>() {});
             }
         } catch (Exception e) {
             log.error("Failed to get cached popular items: {}", e.getMessage());
@@ -117,7 +118,7 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public void cacheUserItems(String userId, Page<ItemResponse> items, int page, int size, String sortBy, String sortDirection) {
+    public void cacheUserItems(String userId, PageResponse<ItemResponse> items, int page, int size, String sortBy, String sortDirection) {
         try {
             String key = generateUserItemsKey(userId, page, size, sortBy, sortDirection);
             redisTemplate.opsForValue().set(key, items, DEFAULT_TTL);
@@ -129,13 +130,13 @@ public class CacheServiceImpl implements CacheService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Page<ItemResponse> getCachedUserItems(String userId, int page, int size, String sortBy, String sortDirection) {
+    public PageResponse<ItemResponse> getCachedUserItems(String userId, int page, int size, String sortBy, String sortDirection) {
         try {
             String key = generateUserItemsKey(userId, page, size, sortBy, sortDirection);
             Object cached = redisTemplate.opsForValue().get(key);
             if (cached != null) {
                 log.info("Cache hit for user {} items with key {}", userId, key);
-                return objectMapper.convertValue(cached, new TypeReference<Page<ItemResponse>>() {
+                return objectMapper.convertValue(cached, new TypeReference<PageResponse<ItemResponse>>() {
                 });
             }
         } catch (Exception e) {
@@ -161,17 +162,12 @@ public class CacheServiceImpl implements CacheService {
 
     @Override
     public void evictAllUserItems(String userId) {
-        try {
-            String key = USER_ITEMS_KEY_PREFIX + userId;
-            redisTemplate.delete(key);
-            log.info("Evicted all cached items for user {} with key {}", userId, key);
-        } catch (Exception e) {
-            log.error("Failed to evict cached items for user {}: {}", userId, e.getMessage());
-        }
+        String key = USER_ITEMS_KEY_PREFIX + userId + ":*";
+        deleteKeysByPattern(key);
     }
 
     @Override
-    public void cacheAllItems(int page, int size, String sortBy, String sortDirection, Page<ItemResponse> items) {
+    public void cacheAllItems(int page, int size, String sortBy, String sortDirection, PageResponse<ItemResponse> items) {
         try {
             String key = generateAllItemsKey(page, size, sortBy, sortDirection);
             redisTemplate.opsForValue().set(key, items, LIST_TTL);
@@ -182,13 +178,13 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public Page<ItemResponse> getCachedAllItems(int page, int size, String sortBy, String sortDirection) {
+    public PageResponse<ItemResponse> getCachedAllItems(int page, int size, String sortBy, String sortDirection) {
         try {
             String key = generateAllItemsKey(page, size, sortBy, sortDirection);
             Object cached = redisTemplate.opsForValue().get(key);
             if (cached != null) {
                 log.info("Cache hit for all items with key {}", key);
-                return objectMapper.convertValue(cached, new TypeReference<Page<ItemResponse>>() {
+                return objectMapper.convertValue(cached, new TypeReference<PageResponse<ItemResponse>>() {
                 });
             }
         } catch (Exception e) {
@@ -200,13 +196,8 @@ public class CacheServiceImpl implements CacheService {
 
     @Override
     public void evictAllItems() {
-        try {
-            String pattern = ALL_ITEMS_KEY_PREFIX + "*";
-            redisTemplate.delete(redisTemplate.keys(pattern));
-            log.info("Evicted all cached items with pattern {}", pattern);
-        } catch (Exception e) {
-            log.error("Failed to evict all cached items: {}", e.getMessage());
-        }
+        deleteKeysByPattern(ALL_ITEMS_KEY_PREFIX + "*");
+        evictCachedPopularItems();
     }
 
     private String generateUserItemsKey(String userId, int page, int size, String sortBy, String sortDirection) {
@@ -215,5 +206,19 @@ public class CacheServiceImpl implements CacheService {
 
     private String generateAllItemsKey(int page, int size, String sortBy, String sortDirection) {
         return "items:all:page:" + page + ":size:" + size + ":sortBy:" + sortBy + ":sortDir:" + sortDirection;
+    }
+    
+    private void deleteKeysByPattern(String pattern){
+        try{
+            Set<String> keys = redisTemplate.keys(pattern);
+            if (!keys.isEmpty()) {
+                redisTemplate.delete(keys);
+                log.info("Deleted keys with pattern {}: {}", pattern, keys);
+            } else {
+                log.info("No keys found for pattern {}", pattern);
+            }
+        }catch (Exception e){
+            log.error("Failed to delete keys by pattern {}: {}", pattern, e.getMessage());
+        }
     }
 }

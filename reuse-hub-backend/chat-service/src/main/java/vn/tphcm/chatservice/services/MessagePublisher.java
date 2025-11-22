@@ -11,12 +11,10 @@ package vn.tphcm.chatservice.services;
  */
 
 import vn.tphcm.event.dto.MessageEvent;
-import vn.tphcm.event.dto.PresenceEvent;
-import vn.tphcm.event.dto.TypingEvent;
+import vn.tphcm.event.dto.NotificationMessage;
 
 public interface MessagePublisher {
     void publishMessage(MessageEvent event);
-    void publishPresence(PresenceEvent event);
-    void publishTyping(TypingEvent event);
 
+    void publishNotificationMessage(NotificationMessage event);
 }

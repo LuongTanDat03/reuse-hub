@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vn.tphcm.transactionservice.commons.TransactionStatus;
+import vn.tphcm.transactionservice.commons.TransactionType;
 import vn.tphcm.transactionservice.dtos.ApiResponse;
+import vn.tphcm.transactionservice.dtos.PageResponse;
 import vn.tphcm.transactionservice.dtos.request.CreateTransactionRequest;
 import vn.tphcm.transactionservice.dtos.request.SubmitRatingRequest;
 import vn.tphcm.transactionservice.dtos.response.TransactionResponse;
@@ -107,6 +109,96 @@ public class TransactionController {
         log.info("Request received to UPDATE STATUS for transaction {} from user {}. New status: {}", transactionId, userId, status);
 
         return transactionService.updateTransactionStatus(userId, transactionId, status);
+    }
+
+    @GetMapping("/buyer")
+    @Operation(summary = "Get transactions by Buyer ID", description = "Retrieve paginated transactions for a specific buyer.")
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionByBuyerId(@RequestHeader("X-User-Id") String userIdHeader,
+                                                                                  @RequestParam int page,
+                                                                                  @RequestParam int size,
+                                                                                  @RequestParam String sortBy,
+                                                                                  @RequestParam String sortDirection) throws AccessDeniedException {
+
+        String userId = getUserIdFromHeader(userIdHeader);
+        log.info("Request received to GET transactions for BUYER {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
+                userId, page, size, sortBy, sortDirection);
+
+        return transactionService.getTransactionByBuyerId(userId, page, size, sortBy, sortDirection);
+    }
+
+    @GetMapping("/seller")
+    @Operation(summary = "Get transactions by Seller ID", description = "Retrieve paginated transactions for a specific seller.")
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionBySellerId(@RequestHeader("X-User-Id") String userIdHeader,
+                                                                                   @RequestParam int page,
+                                                                                   @RequestParam int size,
+                                                                                   @RequestParam String sortBy,
+                                                                                   @RequestParam String sortDirection) throws AccessDeniedException {
+
+        String userId = getUserIdFromHeader(userIdHeader);
+        log.info("Request received to GET transactions for SELLER {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
+                userId, page, size, sortBy, sortDirection);
+
+        return transactionService.getTransactionBySellerId(userId, page, size, sortBy, sortDirection);
+    }
+
+    @GetMapping("/user")
+    @Operation(summary = "Get transactions by User ID", description = "Retrieve paginated transactions for a specific user (buyer or seller).")
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionByUserId(@RequestHeader("X-User-Id") String userIdHeader,
+                                                                                 @RequestParam int page,
+                                                                                 @RequestParam int size,
+                                                                                 @RequestParam String sortBy,
+                                                                                 @RequestParam String sortDirection) throws AccessDeniedException {
+
+        String userId = getUserIdFromHeader(userIdHeader);
+        log.info("Request received to GET transactions for USER {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
+                userId, page, size, sortBy, sortDirection);
+
+        return transactionService.getTransactionByUserId(userId, page, size, sortBy, sortDirection);
+    }
+
+
+    @GetMapping("/seller/pending")
+    @Operation(summary = "Get pending transactions for Seller", description = "Retrieve paginated pending")
+    public ApiResponse<PageResponse<TransactionResponse>> getPendingTransactionsForSeller(@RequestHeader("X-User-Id") String userIdHeader,
+                                                                                          @RequestParam int page,
+                                                                                          @RequestParam int size,
+                                                                                          @RequestParam String sortBy,
+                                                                                          @RequestParam String sortDirection) throws AccessDeniedException {
+        String userId = getUserIdFromHeader(userIdHeader);
+        log.info("Request received to GET PENDING transactions for SELLER {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
+                userId, page, size, sortBy, sortDirection);
+
+        return transactionService.getPendingTransactionsForSeller(userId, page, size, sortBy, sortDirection);
+    }
+
+    @GetMapping("/status")
+    @Operation(summary = "Get transactions by Status", description = "Retrieve paginated transactions for a specific status.")
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionByStatus(@RequestHeader("X-User-Id") String userIdHeader,
+                                                                                 @RequestParam TransactionStatus status,
+                                                                                 @RequestParam int page,
+                                                                                 @RequestParam int size,
+                                                                                 @RequestParam String sortBy,
+                                                                                 @RequestParam String sortDirection) throws AccessDeniedException {
+
+        String userId = getUserIdFromHeader(userIdHeader);
+        log.info("Request received to GET transactions for USER {} with STATUS {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
+                userId, status, page, size, sortBy, sortDirection);
+
+        return transactionService.getTransactionByStatus(userId, status, page, size, sortBy, sortDirection);
+    }
+
+    @GetMapping("/type")
+    @Operation(summary = "Get transactions by Type", description = "Retrieve paginated transactions for a specific type.")
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionByType(@RequestHeader("X-User-Id") String userIdHeader,
+                                                                               @RequestParam TransactionType type,
+                                                                               @RequestParam int page,
+                                                                               @RequestParam int size,
+                                                                               @RequestParam String sortBy,
+                                                                               @RequestParam String sortDirection) throws AccessDeniedException {
+        String userId = getUserIdFromHeader(userIdHeader);
+        log.info("Request received to GET transactions for USER {} with TYPE {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
+                userId, type, page, size, sortBy, sortDirection);
+        return transactionService.getTransactionByType(userId, type, page, size, sortBy, sortDirection);
     }
 
 }

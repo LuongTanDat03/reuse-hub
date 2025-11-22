@@ -13,7 +13,7 @@ package vn.tphcm.chatservice.dtos.response;
 import lombok.*;
 import vn.tphcm.chatservice.commons.ConversationStatus;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -25,15 +25,11 @@ import java.util.Map;
 public class ConversationResponse {
     private String id;
 
-    private List<String> participants;
-
-    private String participantsKey;
-
-    private ConversationType type;
+    private List<String> participantIds;
 
     private String lastMessageId;
 
-    private LocalDateTime lastActivity;
+    private Instant lastMessageTimestamp;
 
     private ConversationStatus status;
 
@@ -42,4 +38,16 @@ public class ConversationResponse {
     private Map<String, Boolean> mutedStatus;
 
     private Map<String, Boolean> notificationSettings;
+
+    private String otherParticipantId;
+
+    private String otherParticipantName;
+
+    private String otherParticipantAvatar;
+
+    private String itemId;
+
+    private String itemTitle;
+
+    private String itemThumbnail;
 }

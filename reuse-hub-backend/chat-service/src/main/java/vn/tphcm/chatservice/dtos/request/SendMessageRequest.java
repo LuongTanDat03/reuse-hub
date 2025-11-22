@@ -14,11 +14,9 @@ import lombok.Getter;
 
 @Getter
 public class SendMessageRequest {
-    private String conversationId;
-
     private String senderId;
 
-    private String content;
+    private String recipientId;
 
-    private String replyToMessageId;
+    private String content;
 }

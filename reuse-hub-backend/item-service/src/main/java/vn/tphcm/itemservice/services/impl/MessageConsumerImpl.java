@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.tphcm.event.common.EventType;
+import vn.tphcm.event.commons.EventType;
 import vn.tphcm.event.dto.FeedbackEvent;
 import vn.tphcm.event.dto.ItemReservationEvent;
 import vn.tphcm.event.dto.PaymentEvent;
@@ -168,7 +168,7 @@ public class MessageConsumerImpl implements MessageConsumer {
     }
 
     @Override
-    @RabbitListener(queues = "${rabbitmq.queue.payment.item-boost}")
+//    @RabbitListener(queues = "${rabbitmq.queue.payment.item-boost}")
     public void handlePaymentEvent(PaymentEvent event) {
 
     }

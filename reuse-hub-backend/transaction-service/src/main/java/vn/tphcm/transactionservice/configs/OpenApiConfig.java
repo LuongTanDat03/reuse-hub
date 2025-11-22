@@ -34,7 +34,7 @@ public class OpenApiConfig {
     public GroupedOpenApi publicApi(@Value("${openapi.service.api-docs}") String apiDocs) {
         return GroupedOpenApi.builder()
                 .group(apiDocs)
-                .packagesToScan("vn.tphcm.transactionservice.controller")
+                .packagesToScan("vn.tphcm.transactionservice.controllers")
                 .build();
     }
 
@@ -56,7 +56,7 @@ public class OpenApiConfig {
                                                 .bearerFormat("JWT")))
                 .security(List.of(new SecurityRequirement().addList(securitySchemeName)))
                 .info(new Info().title(title)
-                        .description("API documents for Transaction Service")
+                        .description("API documents for Reuse Hub App")
                         .version(version)
                         .license(new License().name("Apache 2.0").url("https://springdoc.org")));
     }

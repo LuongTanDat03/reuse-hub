@@ -19,7 +19,7 @@ import org.springframework.stereotype.Repository;
 import vn.tphcm.itemservice.commons.ItemStatus;
 import vn.tphcm.itemservice.models.Item;
 
-import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ItemRepository extends JpaRepository<Item, String> {
@@ -28,10 +28,9 @@ public interface ItemRepository extends JpaRepository<Item, String> {
     Page<Item> findByStatus(ItemStatus status, Pageable pageable);
 
     @Query("SELECT i FROM Item i " +
-            "WHERE (LOWER(i.title) LIKE (CONCAT('%', :keyword, '%') ) ) " +
-            "AND i.status = :status")
-    Page<Item> findByKeywordAndStatus(@Param("keyword") String keyword,
-                                      @Param("status") ItemStatus status,
+            "WHERE i.title LIKE (CONCAT('%', :keyword, '%') ) " +
+            "AND i.status = 'AVAILABLE'")
+    Page<Item> findByKeyword(@Param("keyword") String keyword,
                                       Pageable pageable);
 
     Page<Item> findByCategoryAndStatus(String category, ItemStatus status, Pageable pageable);
@@ -40,4 +39,26 @@ public interface ItemRepository extends JpaRepository<Item, String> {
             "WHERE i.status = :status " +
             "ORDER BY i.viewCount DESC")
     Page<Item> findPopularItemsByStatus(ItemStatus status, Pageable pageable);
+
+    @Query(value = "SELECT * FROM tbl_items i " +
+            "WHERE i.status = 'AVAILABLE' AND " +
+            "ST_DWithin(" +
+            "  i.location, " +
+            "  ST_MakePoint(:longitude, :latitude)::geography, " +
+            "  :radius " +
+            ") " +
+            "ORDER BY ST_Distance(i.location, ST_MakePoint(:longitude, :latitude)::geography)",
+            nativeQuery = true)
+    Page<Item> searchItemNearby(@Param("latitude") double latitude,
+                                @Param("longitude") double longitude,
+                                @Param("radius") double radius,
+                                Pageable pageable);
+
+    @Query("SELECT DISTINCT i FROM Item i " +
+            "WHERE i.status = 'AVAILABLE' AND " +
+            "EXISTS (SELECT t FROM i.tags t WHERE t IN :tags)")
+    Page<Item> findByTagsInAndStatusAvailable(@Param("tags") List<String> tags,
+                                              Pageable pageable);
+
+
 }

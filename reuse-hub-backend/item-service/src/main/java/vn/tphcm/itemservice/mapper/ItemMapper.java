@@ -28,18 +28,22 @@ public interface ItemMapper {
     GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
     @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "category", ignore = true)
     @Mapping(target = "viewCount", ignore = true)
     @Mapping(target = "commentCount", ignore = true)
     @Mapping(target = "likeCount", ignore = true)
     @Mapping(target = "itemInteractions", ignore = true)
-    @Mapping(target = "location", source = "locationRequest", qualifiedByName = "locationRequestToPoint")
+    @Mapping(target = "location", source = "location", qualifiedByName = "locationRequestToPoint")
     Item toItem(ItemCreationRequest request);
 
     @Mapping(target = "location", source = "location", qualifiedByName = "pointToLocationResponse")
+    @Mapping(target = "category", source = "category.name")
+    @Mapping(target = "categorySlug", source = "category.slug")
     ItemResponse toResponse(Item item);
     
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "category", ignore = true)
     @Mapping(target = "viewCount", ignore = true)
     @Mapping(target = "commentCount", ignore = true)
     @Mapping(target = "likeCount", ignore = true)

@@ -15,7 +15,7 @@ import vn.tphcm.chatservice.commons.MessageStatus;
 import vn.tphcm.chatservice.commons.MessageType;
 import vn.tphcm.chatservice.commons.ReactionType;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
 
@@ -30,12 +30,10 @@ public class MessageResponse {
     private String conversationId;
 
     private String senderId;
+    
+    private String recipientId;
 
     private String content;
-
-    private String contentBeforeEditOrDelete;
-
-    private String replyToMessageId;
 
     private List<String> media;
 
@@ -45,10 +43,8 @@ public class MessageResponse {
 
     private EnumMap<ReactionType, List<String>> reactions;
 
-    private List<String> deletedBy;
+    private Instant createdAt;
 
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
 }

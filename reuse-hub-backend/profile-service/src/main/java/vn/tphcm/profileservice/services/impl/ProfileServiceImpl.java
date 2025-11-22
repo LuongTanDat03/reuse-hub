@@ -47,6 +47,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Value("${avatar.default}")
     private String avatar;
+
     @Override
     @Transactional
     public ApiResponse<UserResponse> createProfile(ProfileUserRequest request) {

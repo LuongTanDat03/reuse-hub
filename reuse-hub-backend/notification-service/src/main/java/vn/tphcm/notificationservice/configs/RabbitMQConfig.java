@@ -34,14 +34,14 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_VERIFICATION_DLX = "ex.verification.dlx";
 
     @Bean
-    public DirectExchange notificationExchange() {
-        return new DirectExchange(EXCHANGE_NOTIFICATION, true, false);
+    public TopicExchange notificationExchange() {
+        return new TopicExchange(EXCHANGE_NOTIFICATION, true, false);
     }
 
     // This Exchange is used for dead-lettering exchanges
     @Bean
-    public DirectExchange notificationDlx() {
-        return new DirectExchange(EXCHANGE_NOTIFICATION_DLX, true, false);
+    public TopicExchange notificationDlx() {
+        return new TopicExchange(EXCHANGE_NOTIFICATION_DLX, true, false);
     }
 
     // This Queue is used for dead-lettering exchanges
@@ -69,13 +69,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public DirectExchange verificationExchange() {
-        return new DirectExchange(EXCHANGE_VERIFICATION, true, false);
+    public TopicExchange verificationExchange() {
+        return new TopicExchange(EXCHANGE_VERIFICATION, true, false);
     }
 
     @Bean
-    public DirectExchange verificationDlx() {
-        return new DirectExchange(EXCHANGE_VERIFICATION_DLX, true, false);
+    public TopicExchange verificationDlx() {
+        return new TopicExchange(EXCHANGE_VERIFICATION_DLX, true, false);
     }
 
     @Bean

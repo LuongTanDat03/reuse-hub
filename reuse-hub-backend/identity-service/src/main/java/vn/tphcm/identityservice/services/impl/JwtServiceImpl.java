@@ -107,7 +107,6 @@ public class JwtServiceImpl implements JwtService {
 
         try {
             if (token == null || token.trim().isEmpty()) {
-                log.error("Token is null or empty");
                 return false;
             }
 

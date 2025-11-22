@@ -150,6 +150,7 @@
             <version>${swagger.version}</version>
         </dependency>
 
+        <!-- Spring Docs -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-common</artifactId>

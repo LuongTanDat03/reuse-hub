@@ -18,6 +18,7 @@ import vn.tphcm.event.dto.PaymentEvent;
 import vn.tphcm.transactionservice.commons.TransactionStatus;
 import vn.tphcm.transactionservice.commons.TransactionType;
 import vn.tphcm.transactionservice.dtos.ApiResponse;
+import vn.tphcm.transactionservice.dtos.PageResponse;
 import vn.tphcm.transactionservice.dtos.request.CreateTransactionRequest;
 import vn.tphcm.transactionservice.dtos.response.TransactionResponse;
 
@@ -35,19 +36,17 @@ public interface TransactionService {
 
     ApiResponse<TransactionResponse> submitFeedback(String userId, String transactionId, String comment, Double rating);
 
-    ApiResponse<Page<TransactionResponse>> getTransactionByBuyerId(String userId, int page, int size, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<TransactionResponse>> getTransactionByBuyerId(String userId, int page, int size, String sortBy, String sortDirection);
 
-    ApiResponse<Page<TransactionResponse>> getTransactionBySellerId(String userId, int page, int size, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<TransactionResponse>> getTransactionBySellerId(String userId, int page, int size, String sortBy, String sortDirection);
 
-    ApiResponse<Page<TransactionResponse>> getTransactionByUserId(String userId, int page, int size, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<TransactionResponse>> getTransactionByUserId(String userId, int page, int size, String sortBy, String sortDirection);
 
-    ApiResponse<Page<TransactionResponse>> getTransactionByStatus(String userId, TransactionStatus status, int page, int size, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<TransactionResponse>> getTransactionByStatus(String userId, TransactionStatus status, int page, int size, String sortBy, String sortDirection);
 
-    ApiResponse<Page<TransactionResponse>> getTransactionByType(String userId, TransactionType type, int page, int size, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<TransactionResponse>> getTransactionByType(String userId, TransactionType type, int page, int size, String sortBy, String sortDirection);
 
-    ApiResponse<Page<TransactionResponse>> getTransactionByItemId(String userId, String itemId, int page, int size, String sortBy, String sortDirection);
-
-    ApiResponse<Page<TransactionResponse>> getPendingTransactionsForSeller(String userId, int page, int size, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<TransactionResponse>> getPendingTransactionsForSeller(String userId, int page, int size, String sortBy, String sortDirection);
 
     void processExpiredTransaction();
 

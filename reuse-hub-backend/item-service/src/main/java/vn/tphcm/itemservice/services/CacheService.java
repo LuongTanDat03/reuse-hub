@@ -11,7 +11,7 @@ package vn.tphcm.itemservice.services;
  * @date: 9/20/2025
  */
 
-import org.springframework.data.domain.Page;
+import vn.tphcm.itemservice.dtos.PageResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
 
 public interface CacheService {
@@ -23,16 +23,16 @@ public interface CacheService {
     void evictCachedItem(String itemId);
 
     // Cache popular items
-    void cachePopularItems(Page<ItemResponse> items);
+    void cachePopularItems(PageResponse<ItemResponse> items);
 
-    Page<ItemResponse> getCachedPopularItems();
+    PageResponse<ItemResponse> getCachedPopularItems();
 
     void evictCachedPopularItems();
 
     // Cache user-specific items
-    void cacheUserItems(String userId, Page<ItemResponse> items, int page, int size, String sortBy, String sortDirection);
+    void cacheUserItems(String userId, PageResponse<ItemResponse> items, int page, int size, String sortBy, String sortDirection);
 
-    Page<ItemResponse> getCachedUserItems(String userId, int page, int size, String sortBy, String sortDirection);
+    PageResponse<ItemResponse> getCachedUserItems(String userId, int page, int size, String sortBy, String sortDirection);
 
     Long incrementItemViewCount(String itemId);
 
@@ -40,9 +40,9 @@ public interface CacheService {
 
     // Cache all items
 
-    void cacheAllItems(int page, int size, String sortBy, String sortDirection, Page<ItemResponse> items);
+    void cacheAllItems(int page, int size, String sortBy, String sortDirection, PageResponse<ItemResponse> items);
 
-    Page<ItemResponse> getCachedAllItems(int page, int size, String sortBy, String sortDirection);
+    PageResponse<ItemResponse> getCachedAllItems(int page, int size, String sortBy, String sortDirection);
 
     void evictAllItems();
 }

@@ -13,23 +13,25 @@ package vn.tphcm.chatservice.services.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import vn.tphcm.chatservice.commons.ConversationStatus;
+import vn.tphcm.chatservice.client.ItemServiceClient;
+import vn.tphcm.chatservice.client.ProfileServiceClient;
 import vn.tphcm.chatservice.dtos.ApiResponse;
-import vn.tphcm.chatservice.dtos.request.CreateConversationRequest;
+import vn.tphcm.chatservice.dtos.PageResponse;
 import vn.tphcm.chatservice.dtos.response.ConversationResponse;
-import vn.tphcm.chatservice.exceptions.ResourceNotFoundException;
+import vn.tphcm.chatservice.dtos.response.ItemResponse;
+import vn.tphcm.chatservice.dtos.response.ProfileResponse;
+import vn.tphcm.chatservice.exceptions.InvalidDataException;
 import vn.tphcm.chatservice.mapper.ConversationMapper;
 import vn.tphcm.chatservice.models.Conversation;
 import vn.tphcm.chatservice.repositories.ConversationRepository;
-import vn.tphcm.chatservice.services.CacheService;
 import vn.tphcm.chatservice.services.ConversationService;
 
-import java.util.*;
+import java.util.List;
 
+import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
 
 @Service
@@ -38,124 +40,140 @@ import static org.springframework.http.HttpStatus.OK;
 public class ConversationServiceImpl implements ConversationService {
     private final ConversationRepository conversationRepository;
     private final ConversationMapper conversationMapper;
-    private final CacheService cacheService;
+    private final ProfileServiceClient profileClient;
+    private final ItemServiceClient itemServiceClient;
 
     @Override
-    public ApiResponse<ConversationResponse> createConversation(String userId, CreateConversationRequest request) {
-        String participantsKey = generateParticipantsKey(userId, request.getRecipientUserId());
+    public ApiResponse<ConversationResponse> createConversation(String userFirstId, String userSecondId, String itemId) {
+        log.info("Creating conversation between {} and {}", userFirstId, userSecondId);
 
-        Optional<Conversation> existingConversation = conversationRepository.findByParticipantsKey(participantsKey);
-        if (existingConversation.isEmpty()) {
-            List<String> participants = Arrays.asList(userId, request.getRecipientUserId());
+        List<Conversation> conversations = conversationRepository.findByParticipantIds(userFirstId, userSecondId);
 
-            Conversation conversation = Conversation.builder()
-                    .participants(participants)
-                    .participantsKey(participantsKey)
-                    .status(ConversationStatus.ACTIVE)
-                    .mutedStatus(new HashMap<>())
-                    .notificationSettings(new HashMap<>())
-                    .pinnedMessages(new ArrayList<>())
-                    .build();
-
-            conversation = conversationRepository.save(conversation);
-
+        if (!conversations.isEmpty()) {
+            Conversation existing = conversations.get(0);
+            log.info("Found existing conversation: {}", existing.getId());
             return ApiResponse.<ConversationResponse>builder()
                     .status(OK.value())
-                    .message("Conversation created successfully")
-                    .data(conversationMapper.toResponse(conversation))
+                    .data(conversationMapper.toResponse(existing))
+                    .message("Conversation already exists.")
                     .build();
         }
-        return ApiResponse.<ConversationResponse>builder()
-                .status(OK.value())
-                .message("Conversation already exists")
-                .data(conversationMapper.toResponse(existingConversation.get()))
+
+        // Create new conversation
+        Conversation conversation = Conversation.builder()
+                .participantIds(List.of(userFirstId, userSecondId))
                 .build();
 
-    }
+        conversation = conversationRepository.save(conversation);
 
-    @Override
-    public ApiResponse<Page<ConversationResponse>> getUserConversations(String userId, int page, int size) {
-        Pageable pageable = createPageable(page, size);
+        ApiResponse<ProfileResponse> profileResponse = profileClient.getProfile(userSecondId);
 
-        Page<Conversation> conversations = conversationRepository.findConversationsOfUser(userId, pageable);
+        ConversationResponse response = conversationMapper.toResponse(conversation);
 
-        List<ConversationResponse> conversationResponses = conversations.getContent()
-                .stream()
-                .map(conversationMapper::toResponse)
-                .toList();
+        response.setOtherParticipantAvatar(profileResponse.getData().getAvatarUrl());
+        response.setOtherParticipantName(profileResponse.getData().getFirstName() + " " + profileResponse.getData().getLastName());
+        response.setOtherParticipantId(profileResponse.getData().getUserId());
 
-        return ApiResponse.<Page<ConversationResponse>>builder()
-                .status(OK.value())
-                .message("User conversations retrieved successfully")
-                .data(new PageImpl<>(conversationResponses, pageable, conversations.getTotalElements()))
-                .build();
-    }
+        ApiResponse<ItemResponse> itemResponse = itemServiceClient.getItemById(itemId);
 
-    @Override
-    public ApiResponse<ConversationResponse> getConversationById(String conversationId, String userId) {
-        Conversation conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
+        response.setItemId(itemResponse.getData().getId());
+        response.setItemTitle(itemResponse.getData().getTitle());
+        response.setItemThumbnail(itemResponse.getData().getImages().getFirst());
 
         return ApiResponse.<ConversationResponse>builder()
-                .status(OK.value())
-                .message("Conversation retrieved successfully")
-                .data(conversationMapper.toResponse(conversation))
+                .status(CREATED.value())
+                .data(response)
+                .message("Conversation created successfully.")
                 .build();
     }
 
     @Override
-    public ApiResponse<Void> muteConversation(String conversationId, String userId) {
-        Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
+    public ApiResponse<ConversationResponse> getConversations(String userFirstId, String userSecondId, String itemId) {
+        log.info("Fetching conversations between {} and {}", userFirstId, userSecondId);
 
-        conversation.getMutedStatus().put(conversationId, true);
+        List<Conversation> conversations = conversationRepository.findByParticipantIds(userFirstId, userSecondId);
 
-        conversationRepository.save(conversation);
-
-        return ApiResponse.<Void>builder()
-                .status(OK.value())
-                .message("Conversation muted successfully")
-                .build();
-    }
-
-    @Override
-    public ApiResponse<Void> blockUser(String userId, String blockedUserId,boolean isBlock) {
-        Conversation conversation = conversationRepository.findByTwoUsers(userId, blockedUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
-
-        if (isBlock) {
-            conversation.setStatus(ConversationStatus.HIDE);
-        } else {
-            conversation.setStatus(ConversationStatus.ACTIVE);
+        if (conversations.isEmpty()) {
+            throw new InvalidDataException("No conversation found between the users.");
         }
 
-        return ApiResponse.<Void>builder()
+        Conversation conversation = conversations.get(0);
+
+        conversation = conversationRepository.save(conversation);
+
+        ApiResponse<ProfileResponse> profileResponse = profileClient.getProfile(userSecondId);
+
+        ConversationResponse response = conversationMapper.toResponse(conversation);
+
+        response.setOtherParticipantAvatar(profileResponse.getData().getAvatarUrl());
+        response.setOtherParticipantName(profileResponse.getData().getFirstName() + " " + profileResponse.getData().getLastName());
+        response.setOtherParticipantId(profileResponse.getData().getUserId());
+
+        ApiResponse<ItemResponse> itemResponse = itemServiceClient.getItemById(itemId);
+
+        response.setItemId(itemResponse.getData().getId());
+        response.setItemTitle(itemResponse.getData().getTitle());
+        response.setItemThumbnail(itemResponse.getData().getImages().getFirst());
+
+        return ApiResponse.<ConversationResponse>builder()
                 .status(OK.value())
-                .message("User " + (isBlock ? "blocked" : "unblocked") + " successfully")
+                .data(response)
+                .message("Conversation fetched successfully.")
                 .build();
     }
 
     @Override
-    public ApiResponse<Void> deleteConversation(String conversationId, String userId) {
-        Conversation conversation = conversationRepository.findByIdAndUserId(conversationId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
+    public ApiResponse<PageResponse<ConversationResponse>> getMyConversations(String userId, int page, int size) {
+        log.info("Fetching conversations for user {}", userId);
 
-        conversation.setStatus(ConversationStatus.HIDE);
-        conversationRepository.save(conversation);
+        Pageable pageable = createPageable(page, size);
 
-        cacheService.removeUserFromConversation(conversationId, userId);
-        cacheService.evictMessage(conversationId);
-        return null;
+        Page<Conversation> conversationPage = conversationRepository.findByParticipantIdsContains(userId, pageable);
+
+        Page<ConversationResponse> conversationResponsePage = conversationPage.map(conversation -> {
+            ConversationResponse response = conversationMapper.toResponse(conversation);
+
+            String otherUserId = response.getParticipantIds().stream()
+                    .filter(id -> !id.equals(userId))
+                    .findFirst()
+                    .orElse(null);
+
+            response.setOtherParticipantId(otherUserId);
+
+            if (otherUserId != null) {
+                try {
+                    ApiResponse<ProfileResponse> profileResponse = profileClient.getProfile(otherUserId);
+
+                    if (profileResponse.getStatus() == OK.value() && profileResponse.getData() != null) {
+                        response.setOtherParticipantName(profileResponse.getData().getFirstName() + " " + profileResponse.getData().getLastName());
+                        response.setOtherParticipantAvatar(profileResponse.getData().getAvatarUrl());
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to fetch profile for user {}: {}", otherUserId, e.getMessage());
+                }
+            }
+            return response;
+        });
+
+        return ApiResponse.<PageResponse<ConversationResponse>>builder()
+                .status(OK.value())
+                .data(createPageResponse(conversationResponsePage))
+                .message("Conversations fetched successfully.")
+                .build();
     }
 
-    private String generateParticipantsKey(String userId1, String userId2) {
-        List<String> sorted = Arrays.asList(userId1, userId2);
-        Collections.sort(sorted);
-        return String.join("_", sorted);
-    }
 
     private Pageable createPageable(int page, int size) {
         return PageRequest.of(page, size);
+    }
+
+    private <T> PageResponse<T> createPageResponse(Page<T> page) {
+        return PageResponse.<T>builder()
+                .content(page.getContent())
+                .pageNo(page.getNumber())
+                .pageSize(page.getSize())
+                .last(page.isLast())
+                .build();
     }
 }
 

@@ -24,11 +24,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@RequiredArgsConstructor
 @Slf4j(topic = "RABBIT-MQ-CONFIG")
 public class RabbitMQConfig {
-    private final RabbitTemplate rabbitTemplate;
-
     @Value("${rabbitmq.exchange.saga}")
     private String sagaExchange;
     @Value("${rabbitmq.exchange.notification}")
@@ -41,7 +38,34 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-key.notification}")
     private String notificationRK;
 
+    @Value("${rabbitmq.routing-key.transaction}")
+    private String transactionCancelledRK;
 
+    @Value("${rabbitmq.queue.saga.payment-refund}")
+    private String paymentRefundQueue;
+    @Bean
+    public TopicExchange sagaExchange() {
+        log.info("Creating SAGA TopicExchange Bean");
+
+        return new TopicExchange(sagaExchange, true, false);
+    }
+
+    @Bean
+    public TopicExchange notificationExchange() {
+        log.info("Creating Notification TopicExchange Bean");
+
+        return new TopicExchange(notificationExchange, true, false);
+    }
+
+    @Bean
+    public Queue paymentRefundQueue() {
+        return new Queue(paymentRefundQueue, true);
+    }
+
+    @Bean
+    public Binding refundBinding(Queue paymentRefundQueue, TopicExchange sagaExchange) {
+        return BindingBuilder.bind(paymentRefundQueue).to(sagaExchange).with(transactionCancelledRK);
+    }
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter(){
         log.info("Creating Jackson2JsonMessageConverter Bean");

@@ -74,7 +74,7 @@ public class RabbitMQConfig {
 
     @Value("${rabbitmq.routing-key.payment.completed}")
     private String paymentCompletedRK;
-    @Value("${rabbitmq.routing-key.payment.failed}")
+    @Value("${rabbitmq.routing-key.payment.cancelled}")
     private String paymentFailedRK;
     @Value("${rabbitmq.queue.payment.item-boost}")
     private String itemPaymentQueue;
@@ -117,20 +117,6 @@ public class RabbitMQConfig {
                 .bind(itemProcessQueue)
                 .to(sagaExchange)
                 .with(transactionCreatedRK);
-    }
-
-    @Bean
-    public Binding paymentCompletedBinding(Queue itemPaymentQueue, TopicExchange sagaExchange) {
-        return BindingBuilder.bind(itemPaymentQueue)
-                .to(sagaExchange)
-                .with(paymentCompletedRK);
-    }
-
-    @Bean
-    public Binding paymentFailedBinding(Queue itemPaymentQueue, TopicExchange sagaExchange) {
-        return BindingBuilder.bind(itemPaymentQueue)
-                .to(sagaExchange)
-                .with(paymentFailedRK);
     }
 
     @Bean

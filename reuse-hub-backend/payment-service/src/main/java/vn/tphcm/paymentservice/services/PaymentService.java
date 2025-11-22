@@ -19,4 +19,8 @@ public interface PaymentService {
     ApiResponse<PaymentResponse> createPaymentIntent(CreatePaymentRequest request, String userId) throws StripeException;
 
     void handleStripeWebhook(String payload, String sigHeader);
+
+    ApiResponse<PaymentResponse> getPaymentById(String paymentId, String userId);
+
+    ApiResponse<PaymentResponse> getPaymentByTransactionId(String transactionId, String userId);
 }

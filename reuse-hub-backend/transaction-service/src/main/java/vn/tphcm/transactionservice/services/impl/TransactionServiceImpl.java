@@ -19,13 +19,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.tphcm.event.common.EventType;
+import vn.tphcm.event.commons.EventType;
 import vn.tphcm.event.dto.*;
 import vn.tphcm.transactionservice.client.ItemServiceClient;
 import vn.tphcm.transactionservice.commons.ItemStatus;
 import vn.tphcm.transactionservice.commons.TransactionStatus;
 import vn.tphcm.transactionservice.commons.TransactionType;
 import vn.tphcm.transactionservice.dtos.ApiResponse;
+import vn.tphcm.transactionservice.dtos.PageResponse;
 import vn.tphcm.transactionservice.dtos.request.CreateTransactionRequest;
 import vn.tphcm.transactionservice.dtos.response.ItemResponse;
 import vn.tphcm.transactionservice.dtos.response.TransactionResponse;
@@ -53,6 +54,8 @@ public class TransactionServiceImpl implements TransactionService {
     private final ItemServiceClient itemServiceClient;
     private final TransactionMapper transactionMapper;
     private final CacheService cacheService;
+
+    private static final String admin = "SYSTEM";
 
     @Override
     @Transactional
@@ -174,7 +177,7 @@ public class TransactionServiceImpl implements TransactionService {
 
          boolean isBuyer = transaction.getBuyerId().equals(userId);
         boolean isSeller = transaction.getSellerId().equals(userId);
-        boolean isSystem = userId.equals("SYSTEM");
+        boolean isSystem = userId.equals(admin);
 
         if (!isBuyer && !isSeller && !isSystem){
             log.error("User {} is not authorized to update transaction {}", userId, transactionId);
@@ -357,43 +360,105 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public ApiResponse<Page<TransactionResponse>> getTransactionByBuyerId(String userId, int page, int size, String sortBy, String sortDirection) {
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionByBuyerId(String userId, int page, int size, String sortBy, String sortDirection) {
         Pageable pageable = createPageable(page, size, sortBy, sortDirection);
 
         Page<Transaction> transaction = transactionRepository.findByBuyerIdOrderByCreatedAtDesc(userId, pageable);
 
+        Page<TransactionResponse> responses = transaction.map(transactionMapper::toResponse);
 
-        return null;
+        PageResponse<TransactionResponse> pageResponse = createPageResponse(responses);
+
+        return ApiResponse.<PageResponse<TransactionResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Get transactions by buyer ID successfully.")
+                .build();
     }
 
     @Override
-    public ApiResponse<Page<TransactionResponse>> getTransactionBySellerId(String userId, int page, int size, String sortBy, String sortDirection) {
-        return null;
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionBySellerId(String userId, int page, int size, String sortBy, String sortDirection) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDirection);
+
+        Page<Transaction> transaction = transactionRepository.findBySellerIdOrderByCreatedAtDesc(userId, pageable);
+
+        Page<TransactionResponse> responses = transaction.map(transactionMapper::toResponse);
+
+        PageResponse<TransactionResponse> pageResponse = createPageResponse(responses);
+
+        return ApiResponse.<PageResponse<TransactionResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Get transactions by seller ID successfully.")
+                .build();
     }
 
     @Override
-    public ApiResponse<Page<TransactionResponse>> getTransactionByUserId(String userId, int page, int size, String sortBy, String sortDirection) {
-        return null;
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionByUserId(String userId, int page, int size, String sortBy, String sortDirection) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDirection);
+
+        Page<Transaction> transaction = transactionRepository.findByUserId(userId, pageable);
+
+        Page<TransactionResponse> responses = transaction.map(transactionMapper::toResponse);
+
+        PageResponse<TransactionResponse> pageResponse = createPageResponse(responses);
+
+        return ApiResponse.<PageResponse<TransactionResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Get transactions by user ID successfully.")
+                .build();
     }
 
     @Override
-    public ApiResponse<Page<TransactionResponse>> getTransactionByStatus(String userId, TransactionStatus status, int page, int size, String sortBy, String sortDirection) {
-        return null;
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionByStatus(String userId, TransactionStatus status, int page, int size, String sortBy, String sortDirection) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDirection);
+
+        Page<Transaction> transaction = transactionRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, status, pageable);
+
+        Page<TransactionResponse> responses = transaction.map(transactionMapper::toResponse);
+
+        PageResponse<TransactionResponse> pageResponse = createPageResponse(responses);
+
+        return ApiResponse.<PageResponse<TransactionResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Get transactions by status and userId successfully.")
+                .build();
     }
 
     @Override
-    public ApiResponse<Page<TransactionResponse>> getTransactionByType(String userId, TransactionType type, int page, int size, String sortBy, String sortDirection) {
-        return null;
+    public ApiResponse<PageResponse<TransactionResponse>> getTransactionByType(String userId, TransactionType type, int page, int size, String sortBy, String sortDirection) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDirection);
+
+        Page<Transaction> transaction = transactionRepository.findByUserIdAndTypeOrderByCreatedAtDesc(userId, type, pageable);
+
+        Page<TransactionResponse> responses = transaction.map(transactionMapper::toResponse);
+
+        PageResponse<TransactionResponse> pageResponse = createPageResponse(responses);
+
+        return ApiResponse.<PageResponse<TransactionResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Get transactions by type and userId successfully.")
+                .build();
     }
 
     @Override
-    public ApiResponse<Page<TransactionResponse>> getTransactionByItemId(String userId, String itemId, int page, int size, String sortBy, String sortDirection) {
-        return null;
-    }
+    public ApiResponse<PageResponse<TransactionResponse>> getPendingTransactionsForSeller(String userId, int page, int size, String sortBy, String sortDirection) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDirection);
 
-    @Override
-    public ApiResponse<Page<TransactionResponse>> getPendingTransactionsForSeller(String userId, int page, int size, String sortBy, String sortDirection) {
-        return null;
+        Page<Transaction> transaction = transactionRepository.findByUserIdAndStatus(userId, TransactionStatus.PENDING, pageable);
+
+        Page<TransactionResponse> responses = transaction.map(transactionMapper::toResponse);
+
+        PageResponse<TransactionResponse> pageResponse = createPageResponse(responses);
+
+        return ApiResponse.<PageResponse<TransactionResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Get pending transactions for seller successfully.")
+                .build();
     }
 
     @Override
@@ -411,7 +476,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         for (Transaction transaction : expiredTransactions) {
             try {
-                cancelTransaction("SYSTEM", transaction.getId(), "Transaction expired due to non-payment.");
+                cancelTransaction(admin, transaction.getId(), "Transaction expired due to non-payment.");
                 log.info("Expired transaction {} has been cancelled by system.", transaction.getId());
             } catch (Exception e) {
                 log.error("Failed to cancel expired transaction {}: {}", transaction.getId(), e.getMessage());
@@ -436,7 +501,7 @@ public class TransactionServiceImpl implements TransactionService {
                      transactionId, event.getMessage());
 
             if (transaction.getStatus() == TransactionStatus.PAYMENT_PENDING) {
-                cancelTransaction("SYSTEM", transactionId, "Payment failed: " + event.getMessage());
+                cancelTransaction(admin, transactionId, "Payment failed: " + event.getMessage());
             }
             return;
         }
@@ -501,5 +566,16 @@ public class TransactionServiceImpl implements TransactionService {
 
         Sort sort = Sort.by(direction, sortBy != null ? sortBy : "createdAt");
         return PageRequest.of(pageNo, pageSize, sort);
+    }
+
+    private <T> PageResponse<T> createPageResponse(Page<T> page) {
+        return PageResponse.<T>builder()
+                .content(page.getContent())
+                .pageNo(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .last(page.isLast())
+                .build();
     }
 }

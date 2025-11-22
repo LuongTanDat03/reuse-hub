@@ -11,7 +11,6 @@ package vn.tphcm.paymentservice.dtos.request;
  */
 
 import lombok.Getter;
-import vn.tphcm.paymentservice.commons.PaymentMethod;
 
 @Getter
 public class CreatePaymentRequest {
@@ -25,5 +24,5 @@ public class CreatePaymentRequest {
 
     private String linkedTransactionId;
 
-    private PaymentMethod paymentMethod;
+    private String paymentMethod;
 }

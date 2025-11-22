@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.tphcm.event.dto.FeedbackEvent;
 import vn.tphcm.itemservice.commons.ItemStatus;
 import vn.tphcm.itemservice.dtos.ApiResponse;
+import vn.tphcm.itemservice.dtos.PageResponse;
 import vn.tphcm.itemservice.dtos.request.ItemCreationRequest;
 import vn.tphcm.itemservice.dtos.request.ItemSearchRequest;
 import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
@@ -39,21 +40,26 @@ public interface ItemService {
 
     ApiResponse<Void> unlikeItem(String itemId, String userId);
 
-    ApiResponse<Page<ItemResponse>> getMyItem(String userId, int pageNo, int pageSize, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<ItemResponse>> getMyItem(String userId, int pageNo, int pageSize, String sortBy, String sortDirection);
 
-    ApiResponse<Page<ItemResponse>> getAllItems(int pageNo, int pageSize, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<ItemResponse>> getAllItems(int pageNo, int pageSize, String sortBy, String sortDirection);
 
-    ApiResponse<Page<ItemResponse>> searchItems(ItemSearchRequest request, int pageNo, int pageSize, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<ItemResponse>> searchItems(ItemSearchRequest request, int pageNo, int pageSize, String sortBy, String sortDirection);
 
-    ApiResponse<Page<ItemResponse>> getPopularItems(int pageNo, int pageSize, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<ItemResponse>> getPopularItems(int pageNo, int pageSize, String sortBy, String sortDirection);
 
-    ApiResponse<Page<ItemResponse>> getItemsByCategory(String category, int pageNo, int pageSize, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<ItemResponse>> getItemsByCategory(String categorySlug, int pageNo, int pageSize, String sortBy, String sortDirection);
 
-    ApiResponse<Page<CommentResponse>> getItemComments(String itemId, int pageNo, int pageSize, String sortBy, String sortDirection);
+    ApiResponse<PageResponse<CommentResponse>> getItemComments(String itemId, int pageNo, int pageSize, String sortBy, String sortDirection);
 
     ApiResponse<ItemResponse> getItemFeignById(String itemId);
+
+    ApiResponse<PageResponse<ItemResponse>> searchItemsNearby(double latitude, double longitude, double radius, int pageNo, int pageSize, String sortBy, String sortDirection);
+
+    ApiResponse<PageResponse<ItemResponse>> getItemsByTags(List<String> tags, int pageNo, int pageSize, String sortBy, String sortDirection);
 
     void processItemBoost(String itemId);
 
     void processNewFeedback(FeedbackEvent event);
+
 }

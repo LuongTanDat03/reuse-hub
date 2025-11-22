@@ -39,11 +39,11 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.queues.saga.transaction-update-failed}")
     private String transactionUpdateFailedQueue;
 
-    @Value("${rabbitmq.routing-key.payment.completed}")
+    @Value("${rabbitmq.routing-keys.payment.completed}")
     private String paymentCompletedRK;
-    @Value("${rabbitmq.routing-key.payment.failed}")
+    @Value("${rabbitmq.routing-keys.payment.failed}")
     private String paymentFailedRK;
-    @Value("${rabbitmq.queue.payment.transaction-payment}")
+    @Value("${rabbitmq.queues.payment.transaction-payment}")
     private String transactionPaymentQueue;
 
     @Bean

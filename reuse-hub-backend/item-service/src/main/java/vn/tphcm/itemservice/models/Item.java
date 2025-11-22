@@ -29,8 +29,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Entity
 @Table(name = "tbl_items", indexes = {
-        @Index(name = "idx_items_user_id", columnList = "user_id"),
-        @Index(name = "idx_items_status", columnList = "status")
+        @Index(name = "idx_items_user_id", columnList = "userId")
 })
 @Builder
 public class Item extends AbstractEntity<String> implements Serializable {
@@ -46,12 +45,11 @@ public class Item extends AbstractEntity<String> implements Serializable {
     @Builder.Default
     private List<String> images = new ArrayList<>();
 
-    @Column(columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "tbl_item_tags", joinColumns = @JoinColumn(name = "item_id"))
+    @Column(name = "tag_name")
     @Builder.Default
     private List<String> tags = new ArrayList<>();
-
-    private String category;
 
     @Column(columnDefinition = "geometry(Point, 4326)")
     @JdbcTypeCode(SqlTypes.GEOMETRY)
@@ -104,4 +102,8 @@ public class Item extends AbstractEntity<String> implements Serializable {
     @ToString.Exclude
     @Builder.Default
     private List<ItemInteraction> itemInteractions = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 }

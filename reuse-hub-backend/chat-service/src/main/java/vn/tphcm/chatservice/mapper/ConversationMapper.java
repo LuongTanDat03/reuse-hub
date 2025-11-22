@@ -13,15 +13,13 @@ package vn.tphcm.chatservice.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import vn.tphcm.chatservice.dtos.request.CreateConversationRequest;
 import vn.tphcm.chatservice.dtos.response.ConversationResponse;
 import vn.tphcm.chatservice.models.Conversation;
 
 @Mapper(componentModel = "spring")
 public interface ConversationMapper {
-
+    @Mapping(target = "otherParticipantId", ignore = true)
+    @Mapping(target = "otherParticipantName", ignore = true)
+    @Mapping(target = "otherParticipantAvatar", ignore = true)
     ConversationResponse toResponse(Conversation conversation);
-
-    @Mapping(target = "id", ignore = true)
-    Conversation toConversation(CreateConversationRequest request);
 }

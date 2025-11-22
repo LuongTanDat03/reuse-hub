@@ -27,7 +27,6 @@ import static org.springframework.http.HttpStatus.*;
 @RequestMapping("/payments")
 @Slf4j(topic = "PAYMENT-SERVICE")
 public class PaymentController {
-
     private final PaymentService paymentService;
 
     private String getUserIdFromHeader(String userId) {
@@ -64,5 +63,21 @@ public class PaymentController {
                     .message("An internal error occurred.")
                     .build();
         }
+    }
+
+    @GetMapping("/{paymentId}")
+    @Operation(summary = "Get Payment by ID")
+    public ApiResponse<PaymentResponse> getPaymentById(@RequestHeader("X-User-Id") String userIdHeader,
+                                                       @PathVariable String paymentId) {
+        String userId = getUserIdFromHeader(userIdHeader);
+        return paymentService.getPaymentById(paymentId, userId);
+    }
+
+    @GetMapping("/transaction/{transactionId}")
+    @Operation(summary = "Get Payment by Transaction ID")
+    public ApiResponse<PaymentResponse> getPaymentByTransactionId(@RequestHeader("X-User-Id") String userIdHeader,
+                                                                  @PathVariable String transactionId) {
+        String userId = getUserIdFromHeader(userIdHeader);
+        return paymentService.getPaymentByTransactionId(transactionId, userId);
     }
 }

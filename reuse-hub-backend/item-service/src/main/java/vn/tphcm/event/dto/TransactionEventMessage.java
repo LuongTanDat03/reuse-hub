@@ -11,8 +11,8 @@ package vn.tphcm.event.dto;
  */
 
 import lombok.*;
-import vn.tphcm.event.common.EventType;
-import vn.tphcm.event.common.TransactionStatus;
+import vn.tphcm.event.commons.EventType;
+import vn.tphcm.event.commons.TransactionStatus;
 
 @Getter
 @Setter

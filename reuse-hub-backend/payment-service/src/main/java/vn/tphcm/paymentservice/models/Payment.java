@@ -14,7 +14,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import vn.tphcm.paymentservice.commons.PaymentMethod;
 import vn.tphcm.paymentservice.commons.PaymentStatus;
 
 @Getter
@@ -46,7 +45,5 @@ public class Payment extends AbstractEntity<String> {
 
     private String linkedTransactionId;
 
-    @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    private PaymentMethod paymentMethod;
+    private String paymentMethod;
 }

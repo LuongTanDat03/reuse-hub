@@ -31,8 +31,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import vn.tphcm.apigateway.dtos.ApiResponse;
-import vn.tphcm.apigateway.dtos.request.IdentityRequest;
-import vn.tphcm.apigateway.dtos.response.IdentityResponse;
+import vn.tphcm.apigateway.dtos.request.IntrospectRequest;
+import vn.tphcm.apigateway.dtos.response.IntrospectResponse;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,10 +74,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         log.info("Authorization header: {}", token);
 
         return webClientBuilder.build().post()
-                .uri("lb://identity-service/api/v1/identity/auth/introspect")
-                .bodyValue(new IdentityRequest(token))
+                .uri("lb://identity-service/identity/auth/introspect")
+                .bodyValue(new IntrospectRequest(token))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<ApiResponse<IdentityResponse>>() {
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<IntrospectResponse>>() {
                 })
                 .flatMap(apiResponse -> {
                     if (apiResponse != null && apiResponse.getData() != null && apiResponse.getData().isValid()) {

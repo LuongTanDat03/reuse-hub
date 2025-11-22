@@ -27,7 +27,6 @@ import static org.springframework.http.HttpStatus.*;
 @Slf4j(topic = "PAYMENT-WEBHOOK-CONTROLLER")
 @Hidden
 public class PaymentWebhookController {
-
     private final PaymentService paymentService;
 
     @PostMapping("/webhook")

@@ -22,9 +22,11 @@ public class ItemCreationRequest {
 
     private List<String> tags;
 
-    private String category;
+    private String categoryId;
 
     private Long price;
 
-    private LocationRequest locationRequest;
+    private String address;
+
+    private LocationRequest location;
 }

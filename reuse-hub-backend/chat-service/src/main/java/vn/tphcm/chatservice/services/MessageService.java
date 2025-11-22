@@ -12,23 +12,13 @@ package vn.tphcm.chatservice.services;
  */
 
 
-import org.springframework.data.domain.Page;
 import vn.tphcm.chatservice.dtos.ApiResponse;
+import vn.tphcm.chatservice.dtos.PageResponse;
 import vn.tphcm.chatservice.dtos.request.SendMessageRequest;
 import vn.tphcm.chatservice.dtos.response.MessageResponse;
 
-import java.util.List;
-
 public interface MessageService {
-    ApiResponse<MessageResponse> sendMessage(SendMessageRequest request, String senderId);
+    ApiResponse<MessageResponse> sendMessage(SendMessageRequest request);
 
-    ApiResponse<Page<MessageResponse>> getMessages(String conversationId, String userId, int page, int size);
-
-    ApiResponse<MessageResponse> editMessage(String messageId, String newContent, String userId);
-
-    ApiResponse<MessageResponse> deleteMessage(String messageId, String userId);
-
-    ApiResponse<Void> markMessageAsRead(String conversationId, String userId);
-
-    ApiResponse<List<MessageResponse>> searchMessages(String conversationId, String userId, String keyword);
+    ApiResponse<PageResponse<MessageResponse>> getMessages(String conversationId, String userId, int page, int size);
 }

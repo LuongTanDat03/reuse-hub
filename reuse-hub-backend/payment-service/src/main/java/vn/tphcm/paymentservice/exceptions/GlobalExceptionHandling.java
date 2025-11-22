@@ -219,41 +219,4 @@ public class GlobalExceptionHandling {
         return errorResponse;
     }
 
-
-    /**
-     * Handle exception when the request not found data
-     *
-     * @param e
-     * @param req
-     * @return
-     */
-    @ExceptionHandler(AccessDeniedException.class)
-    @ApiResponses(
-            @ApiResponse(responseCode = "403", description = "Forbidden",
-                    content = {@Content(mediaType = APPLICATION_JSON_VALUE,
-                            examples = @ExampleObject(
-                                    name = "403 Response",
-                                    summary = "Handle Exception when forbidden",
-                                    value = """
-                                            {
-                                                "timestamp": "2025-03-29T09:00:00.000+00:00",
-                                                "status": 404,
-                                                "path": "/api/v1/...",
-                                                "error": "Forbidden",
-                                                "message": "{data} not found"
-                                            }
-                                            """
-                            )
-                    )})
-    )
-    public ErrorResponse handleAccessDeniedException(InvalidDataException e, WebRequest req) {
-        errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(new Date());
-        errorResponse.setPath(req.getDescription(false).replace("uri=", ""));
-        errorResponse.setStatus(FORBIDDEN.value());
-        errorResponse.setError(FORBIDDEN.getReasonPhrase());
-        errorResponse.setMessage(e.getMessage());
-        return errorResponse;
-    }
-
 }

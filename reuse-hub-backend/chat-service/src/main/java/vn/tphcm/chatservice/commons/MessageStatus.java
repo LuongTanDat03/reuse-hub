@@ -11,5 +11,7 @@ package vn.tphcm.chatservice.commons;
  */
 
 public enum MessageStatus {
-    SENT, DELIVERED, SEEN, FAILED
+    SENT,
+    DELIVERED,
+    SEEN
 }
