@@ -19,13 +19,6 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class AppConfig {
-    private static final String[] whiteList = {
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-ui.html"
-    };
-
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)

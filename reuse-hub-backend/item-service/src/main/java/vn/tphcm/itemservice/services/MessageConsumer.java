@@ -10,6 +10,7 @@ package vn.tphcm.itemservice.services;
  * @date: 11/3/2025
  */
 
+import vn.tphcm.event.dto.AiTagsGeneratedEvent;
 import vn.tphcm.event.dto.FeedbackEvent;
 import vn.tphcm.event.dto.PaymentEvent;
 import vn.tphcm.event.dto.TransactionEventMessage;
@@ -20,4 +21,6 @@ public interface MessageConsumer {
     void handleFeedbackSubmitted(FeedbackEvent event);
 
     void handlePaymentEvent(PaymentEvent event);
+
+    void handleAiTagsGenerated(AiTagsGeneratedEvent event);
 }

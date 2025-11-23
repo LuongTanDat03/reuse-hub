@@ -12,15 +12,11 @@ package vn.tphcm.itemservice.dtos.request;
 
 import lombok.Getter;
 
-import java.util.List;
-
 @Getter
 public class ItemCreationRequest {
     private String title;
 
     private String description;
-
-    private List<String> tags;
 
     private String categoryId;
 

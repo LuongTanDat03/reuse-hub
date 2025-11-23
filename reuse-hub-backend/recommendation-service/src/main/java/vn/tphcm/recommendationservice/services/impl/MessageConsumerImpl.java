@@ -30,7 +30,7 @@ public class MessageConsumerImpl implements MessageConsumer {
     @RabbitListener(queues = "q.recommendation.data")
     public void handleEvent(Object message) {
         try{
-            if (message instanceof LinkedHashMap<?,?>){
+            if (message instanceof LinkedHashMap){
                 LinkedHashMap<String, Object> msg = (LinkedHashMap<String, Object>) message;
                 String eventType = (String) msg.get("eventType");
                 switch (eventType) {

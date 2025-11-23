@@ -45,4 +45,6 @@ public interface CacheService {
     PageResponse<ItemResponse> getCachedAllItems(int page, int size, String sortBy, String sortDirection);
 
     void evictAllItems();
+
+    void evictAllRelatedCaches(String itemId, String userId);
 }

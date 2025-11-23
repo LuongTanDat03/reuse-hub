@@ -200,6 +200,13 @@ public class CacheServiceImpl implements CacheService {
         evictCachedPopularItems();
     }
 
+    @Override
+    public void evictAllRelatedCaches(String itemId, String userId) {
+        evictAllItems();
+        evictCachedItem(itemId);
+        evictAllUserItems(userId);
+    }
+
     private String generateUserItemsKey(String userId, int page, int size, String sortBy, String sortDirection) {
         return USER_ITEMS_KEY_PREFIX + userId + ":page:" + page + ":size:" + size + ":sortBy:" + sortBy + ":sortDir:" + sortDirection;
     }

@@ -17,7 +17,6 @@ import vn.tphcm.profileservice.commons.Gender;
 import vn.tphcm.profileservice.models.UserHistory;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Setter

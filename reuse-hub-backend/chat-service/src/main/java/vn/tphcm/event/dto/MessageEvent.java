@@ -11,7 +11,6 @@ package vn.tphcm.event.dto;
  */
 
 import lombok.*;
-import vn.tphcm.chatservice.commons.MessageType;
 
 import java.util.List;
 

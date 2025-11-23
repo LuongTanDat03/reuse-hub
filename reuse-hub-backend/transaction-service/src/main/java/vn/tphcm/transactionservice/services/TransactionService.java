@@ -12,7 +12,6 @@ package vn.tphcm.transactionservice.services;
  */
 
 
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import vn.tphcm.event.dto.PaymentEvent;
 import vn.tphcm.transactionservice.commons.TransactionStatus;

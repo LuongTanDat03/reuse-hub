@@ -12,17 +12,14 @@ package vn.tphcm.itemservice.controllers;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import vn.tphcm.itemservice.dtos.ApiResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
 import vn.tphcm.itemservice.services.ItemService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("item-feign")
+@RequestMapping("/item-feign")
 @Slf4j(topic = "ITEM-FEIGN-CONTROLLER")
 public class ItemFeignController {
     private final ItemService itemService;

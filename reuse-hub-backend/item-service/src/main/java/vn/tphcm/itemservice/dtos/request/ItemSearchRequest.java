@@ -8,7 +8,6 @@ package vn.tphcm.itemservice.dtos.request;
 
 import lombok.Getter;
 
-import java.util.List;
 
 /*
  * @author: Luong Tan Dat

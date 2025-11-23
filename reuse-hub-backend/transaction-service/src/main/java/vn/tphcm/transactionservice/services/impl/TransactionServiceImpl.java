@@ -12,6 +12,9 @@ package vn.tphcm.transactionservice.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,7 +37,6 @@ import vn.tphcm.transactionservice.exceptions.InvalidDataException;
 import vn.tphcm.transactionservice.mappers.TransactionMapper;
 import vn.tphcm.transactionservice.models.Transaction;
 import vn.tphcm.transactionservice.repositories.TransactionRepository;
-import vn.tphcm.transactionservice.services.CacheService;
 import vn.tphcm.transactionservice.services.MessageProducer;
 import vn.tphcm.transactionservice.services.TransactionService;
 
@@ -53,9 +55,8 @@ public class TransactionServiceImpl implements TransactionService {
     private final MessageProducer messagePublisher;
     private final ItemServiceClient itemServiceClient;
     private final TransactionMapper transactionMapper;
-    private final CacheService cacheService;
 
-    private static final String admin = "SYSTEM";
+    private static final String ADMIN = "SYSTEM";
 
     @Override
     @Transactional
@@ -177,7 +178,7 @@ public class TransactionServiceImpl implements TransactionService {
 
          boolean isBuyer = transaction.getBuyerId().equals(userId);
         boolean isSeller = transaction.getSellerId().equals(userId);
-        boolean isSystem = userId.equals(admin);
+        boolean isSystem = userId.equals(ADMIN);
 
         if (!isBuyer && !isSeller && !isSystem){
             log.error("User {} is not authorized to update transaction {}", userId, transactionId);
@@ -465,9 +466,9 @@ public class TransactionServiceImpl implements TransactionService {
     @Scheduled(fixedRate = 300000)
     @Transactional
     public void processExpiredTransaction() {
-        List<TransactionStatus> expirableStatuses = List.of(TransactionStatus.PENDING);
+        List<TransactionStatus> explorableStatuses = List.of(TransactionStatus.PENDING);
 
-        List<Transaction> expiredTransactions = transactionRepository.findByStatusInAndExpiresAtBefore(expirableStatuses, LocalDateTime.now());
+        List<Transaction> expiredTransactions = transactionRepository.findByStatusInAndExpiresAtBefore(explorableStatuses, LocalDateTime.now());
 
         if (expiredTransactions.isEmpty()) {
             log.info("No expired transactions found to process.");
@@ -476,7 +477,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         for (Transaction transaction : expiredTransactions) {
             try {
-                cancelTransaction(admin, transaction.getId(), "Transaction expired due to non-payment.");
+                cancelTransaction(ADMIN, transaction.getId(), "Transaction expired due to non-payment.");
                 log.info("Expired transaction {} has been cancelled by system.", transaction.getId());
             } catch (Exception e) {
                 log.error("Failed to cancel expired transaction {}: {}", transaction.getId(), e.getMessage());
@@ -501,14 +502,13 @@ public class TransactionServiceImpl implements TransactionService {
                      transactionId, event.getMessage());
 
             if (transaction.getStatus() == TransactionStatus.PAYMENT_PENDING) {
-                cancelTransaction(admin, transactionId, "Payment failed: " + event.getMessage());
+                cancelTransaction(ADMIN, transactionId, "Payment failed: " + event.getMessage());
             }
             return;
         }
 
         log.info("SAGA: Received PAYMENT_COMPLETED event for transaction {}", transactionId);
         if (transaction.getStatus() == TransactionStatus.PENDING) {
-            TransactionStatus oldStatus = transaction.getStatus();
             transaction.setStatus(TransactionStatus.PAYMENT_PENDING);
             transaction = transactionRepository.save(transaction);
 

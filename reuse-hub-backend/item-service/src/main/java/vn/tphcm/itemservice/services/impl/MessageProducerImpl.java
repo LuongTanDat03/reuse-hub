@@ -18,7 +18,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import vn.tphcm.event.dto.ItemReservationEvent;
 import vn.tphcm.event.dto.NotificationMessage;
-import vn.tphcm.itemservice.configs.RabbitMQConfig;
 import vn.tphcm.itemservice.services.MessageProducer;
 
 @Service
@@ -28,24 +27,24 @@ public class MessageProducerImpl implements MessageProducer {
     private final RabbitTemplate rabbitTemplate;
 
     @Value("${rabbitmq.exchange.item}")
-    private String EXCHANGE_ITEM;
+    private String exchangeItem;
     @Value("${rabbitmq.exchange.notification}")
-    private String EXCHANGE_NOTIFICATION;
+    private String exchangeNotification;
     @Value("${rabbitmq.exchange.saga}")
-    private String SAGA_EXCHANGE;
+    private String sagaExchange;
 
     @Value("${rabbitmq.routing-key.item.created}")
-    private String ROUTING_KEY_ITEM_CREATED;
+    private String routingKeyItemCreated;
     @Value("${rabbitmq.routing-key.item.liked}")
-    private String ROUTING_KEY_ITEM_LIKED;
+    private String routingKeyItemLiked;
     @Value("${rabbitmq.routing-key.item.unliked}")
-    private String ROUTING_KEY_ITEM_UNLIKED;
+    private String routingKeyItemUnliked;
     @Value("${rabbitmq.routing-key.item.deleted}")
-    private String ROUTING_KEY_ITEM_DELETED;
+    private String routingKeyItemDeleted;
     @Value("${rabbitmq.routing-key.item.updated}")
-    private String ROUTING_KEY_ITEM_UPDATED;
+    private String routingKeyItemUpdated;
     @Value("${rabbitmq.routing-key.item.viewed}")
-    private String ROUTING_KEY_ITEM_VIEWED;
+    private String routingKeyItemViewed;
 
     @Value("${rabbitmq.routing-key.saga.item-reserved}")
     private String itemReservedRK;
@@ -56,7 +55,7 @@ public class MessageProducerImpl implements MessageProducer {
     public void publishItemEvent(EventMessage event) {
         try {
             String routingKey = getRoutingKeyForEventType(event.getEventType());
-            rabbitTemplate.convertAndSend(EXCHANGE_ITEM, routingKey, event);
+            rabbitTemplate.convertAndSend(exchangeItem, routingKey, event);
             log.info("Published item event: type={}, routingKey={} for item: {}", event.getEventType(), routingKey, event.getItemId());
         } catch (Exception e) {
             log.error("Failed to publish item event: {}", e.getMessage());
@@ -66,7 +65,7 @@ public class MessageProducerImpl implements MessageProducer {
     @Override
     public void publishNotification(NotificationMessage notification) {
         try {
-            rabbitTemplate.convertAndSend(EXCHANGE_NOTIFICATION, "notification.send", notification);
+            rabbitTemplate.convertAndSend(exchangeNotification, "notification.send", notification);
             log.info("Published notification for user: {}", notification.getRecipientUserId());
         } catch (Exception e) {
             log.error("Failed to publish notification: {}", e.getMessage());
@@ -77,7 +76,7 @@ public class MessageProducerImpl implements MessageProducer {
     public void publishItemReservationResult(ItemReservationEvent event) {
         String routingKey = event.isSuccess() ? itemReservedRK : itemReservedFailedRK;
         try {
-            rabbitTemplate.convertAndSend(SAGA_EXCHANGE, routingKey, event);
+            rabbitTemplate.convertAndSend(sagaExchange, routingKey, event);
             log.info("Published item reservation event: transactionId={}, success={}, routingKey={}",
                     event.getTransactionId(), event.isSuccess(), routingKey);
         } catch (Exception e) {
@@ -87,12 +86,12 @@ public class MessageProducerImpl implements MessageProducer {
 
     private String getRoutingKeyForEventType(String eventType) {
         return switch (eventType) {
-            case "ITEM_CREATED" -> ROUTING_KEY_ITEM_CREATED;
-            case "ITEM_UPDATED" -> ROUTING_KEY_ITEM_UPDATED;
-            case "ITEM_DELETED" -> ROUTING_KEY_ITEM_DELETED;
-            case "ITEM_LIKED" -> ROUTING_KEY_ITEM_LIKED;
-            case "ITEM_UNLIKED" -> ROUTING_KEY_ITEM_UNLIKED;
-            case "ITEM_VIEWED" -> ROUTING_KEY_ITEM_VIEWED;
+            case "ITEM_CREATED" -> routingKeyItemCreated;
+            case "ITEM_UPDATED" -> routingKeyItemUpdated;
+            case "ITEM_DELETED" -> routingKeyItemDeleted;
+            case "ITEM_LIKED" -> routingKeyItemLiked;
+            case "ITEM_UNLIKED" -> routingKeyItemUnliked;
+            case "ITEM_VIEWED" -> routingKeyItemViewed;
             default -> "item.unknown";
         };
     }

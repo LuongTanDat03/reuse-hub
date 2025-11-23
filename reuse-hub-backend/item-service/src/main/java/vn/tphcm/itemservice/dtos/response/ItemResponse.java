@@ -11,7 +11,6 @@ package vn.tphcm.itemservice.dtos.response;
  */
 
 import lombok.*;
-import org.locationtech.jts.geom.Point;
 import vn.tphcm.itemservice.commons.ItemStatus;
 
 import java.util.List;

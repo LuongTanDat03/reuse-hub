@@ -10,7 +10,6 @@ package vn.tphcm.transactionservice.dtos.request;
  * @date: 10/22/2025
  */
 
-import jakarta.persistence.Column;
 import lombok.Getter;
 import vn.tphcm.transactionservice.commons.DeliveryMethod;
 import vn.tphcm.transactionservice.commons.TransactionType;

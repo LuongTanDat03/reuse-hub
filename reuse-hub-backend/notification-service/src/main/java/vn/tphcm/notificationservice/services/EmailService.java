@@ -18,5 +18,5 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface EmailService {
-    void sendVerificationEmail(NotificationEvent event, Message amqpMessage, Channel channel) throws Exception;
+    void sendVerificationEmail(NotificationEvent event, Message amqpMessage, Channel channel);
 }

@@ -15,7 +15,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.tphcm.identityservice.models.UserHasRole;
 
-import java.util.Collection;
 import java.util.Optional;
 
 @Repository

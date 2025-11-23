@@ -19,7 +19,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.tphcm.transactionservice.commons.TransactionStatus;
 import vn.tphcm.transactionservice.commons.TransactionType;
-import vn.tphcm.transactionservice.dtos.PageResponse;
 import vn.tphcm.transactionservice.models.Transaction;
 
 import java.time.LocalDateTime;

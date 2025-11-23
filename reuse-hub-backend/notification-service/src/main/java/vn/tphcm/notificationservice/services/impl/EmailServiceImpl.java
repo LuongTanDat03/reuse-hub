@@ -24,6 +24,8 @@ import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import vn.tphcm.notificationservice.services.EmailService;
 
+import java.io.IOException;
+
 
 @Service
 @RequiredArgsConstructor
@@ -33,10 +35,19 @@ public class EmailServiceImpl implements EmailService {
     private final SpringTemplateEngine templateEngine;
 
     @Override
-    public void sendVerificationEmail(NotificationEvent event, Message amqpMessage, Channel chanel) throws Exception {
-        log.info("Received verification email message: {}", event);
+    public void sendVerificationEmail(NotificationEvent event, Message amqpMessage, Channel chanel) {
+        try {
+            log.info("Received verification email message: {}", event);
 
-        long tag = amqpMessage.getMessageProperties().getDeliveryTag();
+            long tag = amqpMessage.getMessageProperties().getDeliveryTag();
+
+            processAndSendEmail(event, chanel, tag);
+        } catch (Exception e) {
+            log.error("Failed to process verification email message: {}, error={}", event, e.getMessage());
+        }
+    }
+
+    private void processAndSendEmail(NotificationEvent event, Channel channel, long tag) throws MessagingException, IOException {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
@@ -53,11 +64,11 @@ public class EmailServiceImpl implements EmailService {
 
             mailSender.send(mimeMessage);
 
-            chanel.basicAck(tag, false);
+            channel.basicAck(tag, false);
             log.info("Link has sent to user, email={}, param={}", event.getRecipient(), event.getParam());
 
         } catch (MessagingException e) {
-            chanel.basicReject(tag, false); // No requeue => Don't retry sending the message before restarting the service
+            channel.basicReject(tag, false); // No requeue => Don't retry sending the message before restarting the service
             log.error("Error sending email to user, error={}", e.getMessage());
             throw e;
         }

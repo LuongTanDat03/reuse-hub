@@ -46,6 +46,19 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.queues.payment.transaction-payment}")
     private String transactionPaymentQueue;
 
+    private static final String DEAD_LETTER_EXCHANGE = "ex.dead-letter";
+
+    private static final String TX_RESERVED_DLQ = "q.saga.transaction-update-reserved.dlq";
+    private static final String TX_FAILED_DLQ = "q.saga.transaction-update-failed.dlq";
+    private static final String TX_PAYMENT_DLQ = "q.saga.transaction-payment.dlq";
+
+    private static final String TX_RESERVED_DLQ_RK = "dlq.tx-reserved";
+    private static final String TX_FAILED_DLQ_RK = "dlq.tx-failed";
+    private static final String TX_PAYMENT_DLQ_RK = "dlq.tx-payment";
+
+    private static final String X_DEAD_LETTER_EXCHANGE = "x-dead-letter-exchange";
+    private static final String X_DEAD_LETTER_ROUTING_KEY = "x-dead-letter-routing-key";
+
     @Bean
     public TopicExchange transactionExchange() {
         log.info("Declaring Direct Exchange Transaction: {}", transactionExchange);
@@ -65,15 +78,41 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue transactionUpdateReservedQueue() {
-        return new Queue(transactionUpdateReservedQueue);
+    public TopicExchange deadLetterExchange() {
+        log.info("Declaring Dead Letter Exchange: {}", DEAD_LETTER_EXCHANGE);
+        return new TopicExchange(DEAD_LETTER_EXCHANGE, true, false);
     }
 
     @Bean
+    public Queue transactionUpdateReservedQueue() {
+        return QueueBuilder.durable(transactionUpdateReservedQueue)
+                .withArgument(X_DEAD_LETTER_EXCHANGE, DEAD_LETTER_EXCHANGE)
+                .withArgument(X_DEAD_LETTER_ROUTING_KEY, TX_RESERVED_DLQ_RK)
+                .build();
+    }
+    @Bean
+    public Queue transactionUpdateReservedDLQ() { return QueueBuilder.durable(TX_RESERVED_DLQ).build(); }
+
+    @Bean
     public Queue transactionUpdateFailedQueue() {
-        return new Queue(transactionUpdateFailedQueue);
+        return QueueBuilder.durable(transactionUpdateFailedQueue)
+                .withArgument(X_DEAD_LETTER_EXCHANGE, DEAD_LETTER_EXCHANGE)
+                .withArgument(X_DEAD_LETTER_ROUTING_KEY, TX_FAILED_DLQ_RK)
+                .build();
     }
 
+    @Bean
+    public Queue transactionUpdateFailedDLQ() { return QueueBuilder.durable(TX_FAILED_DLQ).build(); }
+
+    @Bean
+    public Queue transactionPaymentQueue() {
+        return QueueBuilder.durable(transactionPaymentQueue)
+                .withArgument(X_DEAD_LETTER_EXCHANGE, DEAD_LETTER_EXCHANGE)
+                .withArgument(X_DEAD_LETTER_ROUTING_KEY, TX_PAYMENT_DLQ_RK)
+                .build();
+    }
+    @Bean
+    public Queue transactionPaymentDLQ() { return QueueBuilder.durable(TX_PAYMENT_DLQ).build(); }
     @Bean
     public Binding itemReservedBinding(Queue transactionUpdateReservedQueue, TopicExchange sagaExchange) {
         return BindingBuilder.bind(transactionUpdateReservedQueue)
@@ -89,11 +128,6 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue transactionPaymentQueue() {
-        return new Queue(transactionPaymentQueue, true);
-    }
-
-    @Bean
     public Binding transPaymentCompletedBinding(Queue transactionPaymentQueue, TopicExchange sagaExchange) {
         return BindingBuilder.bind(transactionPaymentQueue)
                 .to(sagaExchange)
@@ -105,6 +139,19 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(transactionPaymentQueue)
                 .to(sagaExchange)
                 .with(paymentFailedRK);
+    }
+
+    @Bean
+    public Binding txReservedDLQBinding(Queue transactionUpdateReservedDLQ, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(transactionUpdateReservedDLQ).to(deadLetterExchange).with(TX_RESERVED_DLQ_RK);
+    }
+    @Bean
+    public Binding txFailedDLQBinding(Queue transactionUpdateFailedDLQ, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(transactionUpdateFailedDLQ).to(deadLetterExchange).with(TX_FAILED_DLQ_RK);
+    }
+    @Bean
+    public Binding txPaymentDLQBinding(Queue transactionPaymentDLQ, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(transactionPaymentDLQ).to(deadLetterExchange).with(TX_PAYMENT_DLQ_RK);
     }
 
     @Bean

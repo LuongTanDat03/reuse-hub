@@ -11,11 +11,8 @@ package vn.tphcm.itemservice.services;
  * @date: 9/9/2025
  */
 
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.tphcm.event.dto.FeedbackEvent;
-import vn.tphcm.itemservice.commons.ItemStatus;
 import vn.tphcm.itemservice.dtos.ApiResponse;
 import vn.tphcm.itemservice.dtos.PageResponse;
 import vn.tphcm.itemservice.dtos.request.ItemCreationRequest;
@@ -23,7 +20,6 @@ import vn.tphcm.itemservice.dtos.request.ItemSearchRequest;
 import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
 import vn.tphcm.itemservice.dtos.response.CommentResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
-import vn.tphcm.itemservice.models.ItemComment;
 
 import java.util.List;
 
@@ -62,4 +58,5 @@ public interface ItemService {
 
     void processNewFeedback(FeedbackEvent event);
 
+    void updateItemTagsFromAi(String itemId, List<String> tags);
 }

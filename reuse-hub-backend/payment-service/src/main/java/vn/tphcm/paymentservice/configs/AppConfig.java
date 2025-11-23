@@ -25,12 +25,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 @EnableScheduling
 public class AppConfig {
-    private static final String[] PUBLIC_URLS = {
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-ui.html"
-    };
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)

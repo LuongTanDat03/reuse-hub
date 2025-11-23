@@ -107,7 +107,7 @@ public class ItemServiceImpl implements ItemService {
                 .actorUserId(userId)
                 .itemOwnerId(savedItem.getUserId())
                 .category(savedItem.getCategory().getName())
-                .tags(savedItem.getTags())
+                .images(savedItem.getImages())
                 .build();
 
         messageProducer.publishItemEvent(event);
@@ -156,7 +156,8 @@ public class ItemServiceImpl implements ItemService {
                 .actorUserId(userId)
                 .itemOwnerId(savedItem.getUserId())
                 .category(savedItem.getCategory().getName())
-                 .tags(savedItem.getTags())
+                .images(savedItem.getImages())
+                .tags(savedItem.getTags())
                 .build();
 
         messageProducer.publishItemEvent(event);
@@ -266,6 +267,7 @@ public class ItemServiceImpl implements ItemService {
                 .actorUserId(userId)
                 .itemOwnerId(item.getUserId())
                 .category(item.getCategory().getName())
+                .images(item.getImages())
                 .tags(item.getTags())
                 .build();
 
@@ -322,6 +324,7 @@ public class ItemServiceImpl implements ItemService {
                 .actorUserId(userId)
                 .itemOwnerId(item.getUserId())
                 .category(item.getCategory().getName())
+                .images(item.getImages())
                 .tags(item.getTags())
                 .build();
 
@@ -622,6 +625,26 @@ public class ItemServiceImpl implements ItemService {
         cacheService.cacheItem(item.getId(), itemMapper.toResponse(savedItem));
 
         invalidateCachesOnItemChange(item.getUserId());
+    }
+
+    @Override
+    public void updateItemTagsFromAi(String itemId, List<String> tags) {
+        log.info("SAGA: Updating tags for item {} from AI result.", itemId);
+
+        Item item = getItemIfExists(itemId);
+
+        Set<String> currentTags = new HashSet<>();
+        if (item.getTags() != null) {
+            currentTags.addAll(item.getTags());
+        }
+        currentTags.addAll(tags);
+
+        item.setTags(new ArrayList<>(currentTags));
+        itemRepository.save(item);
+
+        cacheService.evictAllRelatedCaches(itemId, item.getUserId());
+
+        log.info("SAGA: Tags updated successfully. New tags: {}", item.getTags());
     }
 
 

@@ -16,10 +16,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.tphcm.event.commons.EventType;
-import vn.tphcm.event.dto.FeedbackEvent;
-import vn.tphcm.event.dto.ItemReservationEvent;
-import vn.tphcm.event.dto.PaymentEvent;
-import vn.tphcm.event.dto.TransactionEventMessage;
+import vn.tphcm.event.dto.*;
 import vn.tphcm.itemservice.commons.ItemStatus;
 import vn.tphcm.itemservice.exceptions.InvalidDataException;
 import vn.tphcm.itemservice.exceptions.ResourceNotFoundException;
@@ -168,9 +165,21 @@ public class MessageConsumerImpl implements MessageConsumer {
     }
 
     @Override
-//    @RabbitListener(queues = "${rabbitmq.queue.payment.item-boost}")
+    @RabbitListener(queues = "${rabbitmq.queue.payment.item-boost}")
     public void handlePaymentEvent(PaymentEvent event) {
+        // TODO document why this method is empty
+    }
 
+    @Override
+    @RabbitListener(queues = "q.item.update-tags")
+    @Transactional
+    public void handleAiTagsGenerated(AiTagsGeneratedEvent event) {
+        log.info("Received AI_TAGS_GENERATED for item: {}", event.getItemId());
+        try {
+            itemService.updateItemTagsFromAi(event.getItemId(), event.getTags());
+        } catch (Exception e) {
+            log.error("Failed to update tags from AI: {}", e.getMessage());
+        }
     }
 
 

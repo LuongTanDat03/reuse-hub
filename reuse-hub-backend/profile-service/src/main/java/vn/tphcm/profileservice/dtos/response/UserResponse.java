@@ -13,7 +13,6 @@ package vn.tphcm.profileservice.dtos.response;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
