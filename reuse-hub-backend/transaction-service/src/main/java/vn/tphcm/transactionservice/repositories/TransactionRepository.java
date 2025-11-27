@@ -57,5 +57,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
             "AND t.status = 'PENDING'")
     boolean hasActiveTransactionForItem(@Param("itemId") String itemId, @Param("userId") String userId);
 
+    @Query("SELECT t FROM Transaction t")
+    Page<Transaction> findAllPage(Pageable pageable);
 
+    @Query("SELECT t.status, COUNT(t) FROM Transaction t GROUP BY t.status")
+    List<Object[]> countTransactionsByStatus();
 }

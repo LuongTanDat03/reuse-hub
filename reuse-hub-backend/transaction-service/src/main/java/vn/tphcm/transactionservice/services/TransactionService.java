@@ -20,6 +20,9 @@ import vn.tphcm.transactionservice.dtos.ApiResponse;
 import vn.tphcm.transactionservice.dtos.PageResponse;
 import vn.tphcm.transactionservice.dtos.request.CreateTransactionRequest;
 import vn.tphcm.transactionservice.dtos.response.TransactionResponse;
+import vn.tphcm.transactionservice.dtos.response.TransactionStatisticsResponse;
+
+import java.util.Map;
 
 @Service
 public interface TransactionService {
@@ -47,7 +50,11 @@ public interface TransactionService {
 
     ApiResponse<PageResponse<TransactionResponse>> getPendingTransactionsForSeller(String userId, int page, int size, String sortBy, String sortDirection);
 
+    ApiResponse<PageResponse<TransactionResponse>> getAllTransactions(int page, int size, String sortBy, String sortDirection);
+
     void processExpiredTransaction();
 
     void processPaymentResult(PaymentEvent event);
+
+    ApiResponse<TransactionStatisticsResponse> getTransactionStatistics();
 }

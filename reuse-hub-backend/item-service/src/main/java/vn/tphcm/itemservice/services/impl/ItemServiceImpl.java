@@ -32,6 +32,7 @@ import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
 import vn.tphcm.itemservice.dtos.response.CommentResponse;
 import vn.tphcm.itemservice.dtos.response.ImageUploadResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
+import vn.tphcm.itemservice.dtos.response.ItemStatisticsResponse;
 import vn.tphcm.itemservice.exceptions.InvalidDataException;
 import vn.tphcm.itemservice.exceptions.ResourceNotFoundException;
 import vn.tphcm.itemservice.mapper.ItemCommentMapper;
@@ -487,7 +488,7 @@ public class ItemServiceImpl implements ItemService {
 
         return ApiResponse.<PageResponse<ItemResponse>>builder()
                 .status(OK.value())
-                .message("Items fetched successfully")
+                .message("Items by category fetched successfully")
                 .data(pageResponse)
                 .timestamp(OffsetDateTime.now())
                 .build();
@@ -557,6 +558,23 @@ public class ItemServiceImpl implements ItemService {
         Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
 
         Page<Item> items = itemRepository.findByTagsInAndStatusAvailable(tagsCleaned, pageable);
+
+        Page<ItemResponse> responsePage = items.map(itemMapper::toResponse);
+
+        PageResponse<ItemResponse> pageResponse = createPageResponse(responsePage);
+
+        return ApiResponse.<PageResponse<ItemResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Items fetched successfully")
+                .build();
+    }
+
+    @Override
+    public ApiResponse<PageResponse<ItemResponse>> getItems(int pageNo, int pageSize, String sortBy, String sortDirection, String filter) {
+        Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
+
+        Page<Item> items = itemRepository.findAllPage(filter, pageable);
 
         Page<ItemResponse> responsePage = items.map(itemMapper::toResponse);
 
@@ -645,6 +663,44 @@ public class ItemServiceImpl implements ItemService {
         cacheService.evictAllRelatedCaches(itemId, item.getUserId());
 
         log.info("SAGA: Tags updated successfully. New tags: {}", item.getTags());
+    }
+
+    @Override
+    public ApiResponse<ItemStatisticsResponse> getItemStatistics() {
+        List<Object[]> results = itemRepository.countItemsByStatus();
+        Map<String, Long> stats = new HashMap<>();
+        for (Object[] result : results) {
+            stats.put(result[0].toString(), (Long) result[1]);
+        }
+        return ApiResponse.<ItemStatisticsResponse>builder()
+                .status(OK.value())
+                .message("Item statistics fetched successfully")
+                .data(ItemStatisticsResponse.builder()
+                        .totalItems(results.stream().mapToLong(s -> (Long) s[1]).sum())
+                        .itemStats(stats)
+                        .build())
+                .build();
+    }
+
+    @Override
+    public ApiResponse<Void> deleteItemForAdmin(String itemId) {
+        log.info("Delete item for itemId: {}", itemId);
+
+        Item item = getItemIfExists(itemId);
+
+        item.setStatus(ItemStatus.DELETED);
+
+        cacheService.evictCachedItem(itemId);
+
+
+        itemRepository.save(item);
+
+        return ApiResponse.<Void>builder()
+                .status(OK.value())
+                .data(null)
+                .message("Item successfully deleted by admin")
+                .timestamp(OffsetDateTime.now())
+                .build();
     }
 
 

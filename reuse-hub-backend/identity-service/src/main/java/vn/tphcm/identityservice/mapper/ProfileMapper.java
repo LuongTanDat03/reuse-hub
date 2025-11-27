@@ -15,9 +15,18 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import vn.tphcm.identityservice.dtos.request.ProfileUserRequest;
 import vn.tphcm.identityservice.dtos.request.UserCreationRequest;
+import vn.tphcm.identityservice.dtos.response.InfoUserResponse;
+import vn.tphcm.identityservice.models.User;
 
 @Mapper(componentModel = "spring", uses = {AddressMapper.class})
 public interface ProfileMapper {
     @Mapping(target = "userId", ignore = true)
     ProfileUserRequest toRegisterRequest(UserCreationRequest request);
+
+    @Mapping(target = "userRoles", ignore = true)
+    @Mapping(target = "firstName", ignore = true)
+    @Mapping(target = "lastName", ignore = true)
+    @Mapping(target = "avatarUrl", ignore = true)
+    @Mapping(target = "address", ignore = true)
+    InfoUserResponse toInfoProfile(User user);
 }

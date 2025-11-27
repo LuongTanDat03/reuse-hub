@@ -20,8 +20,10 @@ import vn.tphcm.itemservice.dtos.request.ItemSearchRequest;
 import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
 import vn.tphcm.itemservice.dtos.response.CommentResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
+import vn.tphcm.itemservice.dtos.response.ItemStatisticsResponse;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ItemService {
     ApiResponse<ItemResponse> createItem(ItemCreationRequest request, String userId, List<MultipartFile> images);
@@ -54,9 +56,15 @@ public interface ItemService {
 
     ApiResponse<PageResponse<ItemResponse>> getItemsByTags(List<String> tags, int pageNo, int pageSize, String sortBy, String sortDirection);
 
+    ApiResponse<PageResponse<ItemResponse>> getItems(int pageNo, int pageSize, String sortBy, String sortDirection, String filter);
+
     void processItemBoost(String itemId);
 
     void processNewFeedback(FeedbackEvent event);
 
     void updateItemTagsFromAi(String itemId, List<String> tags);
+
+    ApiResponse<ItemStatisticsResponse> getItemStatistics();
+
+    ApiResponse<Void> deleteItemForAdmin(String itemId);
 }

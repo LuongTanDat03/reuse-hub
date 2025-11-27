@@ -12,9 +12,6 @@ package vn.tphcm.transactionservice.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +30,7 @@ import vn.tphcm.transactionservice.dtos.PageResponse;
 import vn.tphcm.transactionservice.dtos.request.CreateTransactionRequest;
 import vn.tphcm.transactionservice.dtos.response.ItemResponse;
 import vn.tphcm.transactionservice.dtos.response.TransactionResponse;
+import vn.tphcm.transactionservice.dtos.response.TransactionStatisticsResponse;
 import vn.tphcm.transactionservice.exceptions.InvalidDataException;
 import vn.tphcm.transactionservice.mappers.TransactionMapper;
 import vn.tphcm.transactionservice.models.Transaction;
@@ -41,7 +39,9 @@ import vn.tphcm.transactionservice.services.MessageProducer;
 import vn.tphcm.transactionservice.services.TransactionService;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.CREATED;
@@ -463,6 +463,23 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    public ApiResponse<PageResponse<TransactionResponse>> getAllTransactions(int page, int size, String sortBy, String sortDirection) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDirection);
+
+        Page<Transaction> transaction = transactionRepository.findAllPage(pageable);
+
+        Page<TransactionResponse> responses = transaction.map(transactionMapper::toResponse);
+
+        PageResponse<TransactionResponse> pageResponse = createPageResponse(responses);
+
+        return ApiResponse.<PageResponse<TransactionResponse>>builder()
+                .status(OK.value())
+                .data(pageResponse)
+                .message("Get transactions by user ID successfully.")
+                .build();
+    }
+
+    @Override
     @Scheduled(fixedRate = 300000)
     @Transactional
     public void processExpiredTransaction() {
@@ -523,6 +540,23 @@ public class TransactionServiceImpl implements TransactionService {
                     .build();
             messagePublisher.publishNotification(notification);
         }
+    }
+
+    @Override
+    public ApiResponse<TransactionStatisticsResponse> getTransactionStatistics() {
+        List<Object[]> results = transactionRepository.countTransactionsByStatus();
+        Map<String, Long> stats = new HashMap<>();
+        for (Object[] result : results) {
+            stats.put(result[0].toString(), (Long) result[1]);
+        }
+        return ApiResponse.<TransactionStatisticsResponse>builder()
+                .status(OK.value())
+                .data(TransactionStatisticsResponse.builder()
+                        .totalTransactions(results.stream().mapToLong(value -> (Long) value[1]).sum())
+                        .transactionStats(stats)
+                        .build())
+                .message("Get transaction statistics successfully.")
+                .build();
     }
 
     private void publishTransactionEvent(Transaction transaction, EventType type, String message){
