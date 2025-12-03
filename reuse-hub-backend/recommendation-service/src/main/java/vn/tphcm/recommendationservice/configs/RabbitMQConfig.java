@@ -41,7 +41,7 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-key.transaction.completed}")
     private String completedTransactionRK;
 
-    @Value("${rabbitmq.queue.recommendation}")
+    @Value("${rabbitmq.queue.recommendation.events}")
     private String recommendationQueue;
 
     @Bean

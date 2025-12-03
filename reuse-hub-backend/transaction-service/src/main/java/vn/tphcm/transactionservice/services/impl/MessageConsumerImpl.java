@@ -133,6 +133,7 @@ public class MessageConsumerImpl implements MessageConsumer {
         }
     }
 
+    @Override
     @RabbitListener(queues = "${rabbitmq.queues.payment.transaction-payment}")
     @Transactional
     public void handlePaymentEvent(PaymentEvent event) {

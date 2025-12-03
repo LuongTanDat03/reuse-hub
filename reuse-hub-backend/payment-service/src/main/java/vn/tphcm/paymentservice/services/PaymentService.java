@@ -23,4 +23,6 @@ public interface PaymentService {
     ApiResponse<PaymentResponse> getPaymentById(String paymentId, String userId);
 
     ApiResponse<PaymentResponse> getPaymentByTransactionId(String transactionId, String userId);
+    
+    ApiResponse<PaymentResponse> syncPaymentStatusFromStripe(String paymentId, String userId);
 }

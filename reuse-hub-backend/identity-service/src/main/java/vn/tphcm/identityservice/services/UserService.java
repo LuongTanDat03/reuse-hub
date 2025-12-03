@@ -25,4 +25,6 @@ public interface UserService {
     ApiResponse<UserStatisticsResponse> getUserStatistics();
 
     ApiResponse<Void> updateStatusUser(String userId, UserStatus status);
+    
+    ApiResponse<Void> resetPassword(String userId, String newPassword);
 }

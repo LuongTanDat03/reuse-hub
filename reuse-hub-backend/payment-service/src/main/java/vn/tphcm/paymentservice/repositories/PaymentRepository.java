@@ -15,10 +15,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.tphcm.paymentservice.models.Payment;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, String> {
     Optional<Payment> findByStripePaymentIntentId(String stripePaymentIntentId);
-    Optional<Payment> findByLinkedTransactionId(String linkedTransactionId);
+    List<Payment> findByLinkedTransactionId(String linkedTransactionId);
+    Optional<Payment> findFirstByLinkedTransactionIdOrderByCreatedAtDesc(String linkedTransactionId);
 }

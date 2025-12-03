@@ -33,7 +33,7 @@ public class TransactionResponse {
     private TransactionStatus status;
     private TransactionType type;
     private Integer quantity;
-    private Double totalPrice;
+    private Double totalAmount;
     private DeliveryMethod deliveryMethod;
     private String deliveryDate;
     private String deliveryAddress;

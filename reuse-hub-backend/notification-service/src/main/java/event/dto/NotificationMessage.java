@@ -23,5 +23,6 @@ public class NotificationMessage {
     private String message;
     private String type;
     private String itemId;
+    private String transactionId;
     private Object data;
 }

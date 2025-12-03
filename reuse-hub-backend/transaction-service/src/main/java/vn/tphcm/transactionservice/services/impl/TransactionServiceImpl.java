@@ -514,7 +514,7 @@ public class TransactionServiceImpl implements TransactionService {
         String transactionId = event.getLinkedTransactionId();
         Transaction transaction = getTransactionIfExists(transactionId);
 
-        if (event.getMessage() != null) {
+        if (!event.isSuccess()) {
             log.warn("SAGA: Received PAYMENT_FAILED event for transaction {}. Reason: {}",
                      transactionId, event.getMessage());
 
@@ -526,7 +526,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         log.info("SAGA: Received PAYMENT_COMPLETED event for transaction {}", transactionId);
         if (transaction.getStatus() == TransactionStatus.PENDING) {
-            transaction.setStatus(TransactionStatus.PAYMENT_PENDING);
+            transaction.setStatus(TransactionStatus.PAYMENT_COMPLETED);
             transaction = transactionRepository.save(transaction);
 
             NotificationMessage notification = NotificationMessage.builder()

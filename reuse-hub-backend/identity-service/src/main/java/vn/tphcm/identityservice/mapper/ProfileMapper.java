@@ -23,7 +23,6 @@ public interface ProfileMapper {
     @Mapping(target = "userId", ignore = true)
     ProfileUserRequest toRegisterRequest(UserCreationRequest request);
 
-    @Mapping(target = "userRoles", ignore = true)
     @Mapping(target = "firstName", ignore = true)
     @Mapping(target = "lastName", ignore = true)
     @Mapping(target = "avatarUrl", ignore = true)

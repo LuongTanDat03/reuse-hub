@@ -1,0 +1,13 @@
+/reuse-hub-backend/payment-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/identity-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/item-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/notification-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/profile-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/transaction-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/chat-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/admin-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/recommendation-service/src/main/resources/application-dev.yml
+/reuse-hub-backend/ai-service/src/main/resources/application-dev.yml
+application-dev.yml
+
+.env

@@ -114,10 +114,10 @@ public class TransactionController {
     @GetMapping("/buyer")
     @Operation(summary = "Get transactions by Buyer ID", description = "Retrieve paginated transactions for a specific buyer.")
     public ApiResponse<PageResponse<TransactionResponse>> getTransactionByBuyerId(@RequestHeader("X-User-Id") String userIdHeader,
-                                                                                  @RequestParam int page,
-                                                                                  @RequestParam int size,
-                                                                                  @RequestParam String sortBy,
-                                                                                  @RequestParam String sortDirection) throws AccessDeniedException {
+                                                                                  @RequestParam(defaultValue = "0") int page,
+                                                                                  @RequestParam(defaultValue = "10") int size,
+                                                                                  @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                                                  @RequestParam(defaultValue = "desc") String sortDirection) throws AccessDeniedException {
 
         String userId = getUserIdFromHeader(userIdHeader);
         log.info("Request received to GET transactions for BUYER {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
@@ -129,10 +129,10 @@ public class TransactionController {
     @GetMapping("/seller")
     @Operation(summary = "Get transactions by Seller ID", description = "Retrieve paginated transactions for a specific seller.")
     public ApiResponse<PageResponse<TransactionResponse>> getTransactionBySellerId(@RequestHeader("X-User-Id") String userIdHeader,
-                                                                                   @RequestParam int page,
-                                                                                   @RequestParam int size,
-                                                                                   @RequestParam String sortBy,
-                                                                                   @RequestParam String sortDirection) throws AccessDeniedException {
+                                                                                   @RequestParam(defaultValue = "0") int page,
+                                                                                   @RequestParam(defaultValue = "10") int size,
+                                                                                   @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                                                   @RequestParam(defaultValue = "desc") String sortDirection) throws AccessDeniedException {
 
         String userId = getUserIdFromHeader(userIdHeader);
         log.info("Request received to GET transactions for SELLER {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
@@ -142,12 +142,12 @@ public class TransactionController {
     }
 
     @GetMapping("/user")
-    @Operation(summary = "Get transactions by User ID", description = "Retrieve paginated transactions for a specific user (buyer or seller).")
+    @Operation(summary = "Get trans actions by User ID", description = "Retrieve paginated transactions for a specific user (buyer or seller).")
     public ApiResponse<PageResponse<TransactionResponse>> getTransactionByUserId(@RequestHeader("X-User-Id") String userIdHeader,
-                                                                                 @RequestParam int page,
-                                                                                 @RequestParam int size,
-                                                                                 @RequestParam String sortBy,
-                                                                                 @RequestParam String sortDirection) throws AccessDeniedException {
+                                                                                 @RequestParam(defaultValue = "0") int page,
+                                                                                 @RequestParam(defaultValue = "10") int size,
+                                                                                 @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                                                 @RequestParam(defaultValue = "desc") String sortDirection) throws AccessDeniedException {
 
         String userId = getUserIdFromHeader(userIdHeader);
         log.info("Request received to GET transactions for USER {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
@@ -160,10 +160,10 @@ public class TransactionController {
     @GetMapping("/seller/pending")
     @Operation(summary = "Get pending transactions for Seller", description = "Retrieve paginated pending")
     public ApiResponse<PageResponse<TransactionResponse>> getPendingTransactionsForSeller(@RequestHeader("X-User-Id") String userIdHeader,
-                                                                                          @RequestParam int page,
-                                                                                          @RequestParam int size,
-                                                                                          @RequestParam String sortBy,
-                                                                                          @RequestParam String sortDirection) throws AccessDeniedException {
+                                                                                          @RequestParam(defaultValue = "0") int page,
+                                                                                          @RequestParam(defaultValue = "10") int size,
+                                                                                          @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                                                          @RequestParam(defaultValue = "desc") String sortDirection) throws AccessDeniedException {
         String userId = getUserIdFromHeader(userIdHeader);
         log.info("Request received to GET PENDING transactions for SELLER {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
                 userId, page, size, sortBy, sortDirection);
@@ -175,10 +175,10 @@ public class TransactionController {
     @Operation(summary = "Get transactions by Status", description = "Retrieve paginated transactions for a specific status.")
     public ApiResponse<PageResponse<TransactionResponse>> getTransactionByStatus(@RequestHeader("X-User-Id") String userIdHeader,
                                                                                  @RequestParam TransactionStatus status,
-                                                                                 @RequestParam int page,
-                                                                                 @RequestParam int size,
-                                                                                 @RequestParam String sortBy,
-                                                                                 @RequestParam String sortDirection) throws AccessDeniedException {
+                                                                                 @RequestParam(defaultValue = "0") int page,
+                                                                                 @RequestParam(defaultValue = "10") int size,
+                                                                                 @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                                                 @RequestParam(defaultValue = "desc") String sortDirection) throws AccessDeniedException {
 
         String userId = getUserIdFromHeader(userIdHeader);
         log.info("Request received to GET transactions for USER {} with STATUS {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
@@ -191,10 +191,10 @@ public class TransactionController {
     @Operation(summary = "Get transactions by Type", description = "Retrieve paginated transactions for a specific type.")
     public ApiResponse<PageResponse<TransactionResponse>> getTransactionByType(@RequestHeader("X-User-Id") String userIdHeader,
                                                                                @RequestParam TransactionType type,
-                                                                               @RequestParam int page,
-                                                                               @RequestParam int size,
-                                                                               @RequestParam String sortBy,
-                                                                               @RequestParam String sortDirection) throws AccessDeniedException {
+                                                                               @RequestParam(defaultValue = "0") int page,
+                                                                               @RequestParam(defaultValue = "10") int size,
+                                                                               @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                                               @RequestParam(defaultValue = "desc") String sortDirection) throws AccessDeniedException {
         String userId = getUserIdFromHeader(userIdHeader);
         log.info("Request received to GET transactions for USER {} with TYPE {}. Page: {}, Size: {}, SortBy: {}, SortDirection: {}",
                 userId, type, page, size, sortBy, sortDirection);

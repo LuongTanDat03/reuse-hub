@@ -22,6 +22,7 @@ import vn.tphcm.itemservice.exceptions.InvalidDataException;
 import vn.tphcm.itemservice.exceptions.ResourceNotFoundException;
 import vn.tphcm.itemservice.models.Item;
 import vn.tphcm.itemservice.repositories.ItemRepository;
+import vn.tphcm.itemservice.services.CacheService;
 import vn.tphcm.itemservice.services.ItemService;
 import vn.tphcm.itemservice.services.MessageConsumer;
 import vn.tphcm.itemservice.services.MessageProducer;
@@ -35,6 +36,7 @@ public class MessageConsumerImpl implements MessageConsumer {
     private final ItemRepository itemRepository;
     private final MessageProducer messageProducer;
     private final ItemService itemService;
+    private final CacheService cacheService;
 
     @Override
     @RabbitListener(queues = "${rabbitmq.queue.item-process}")
@@ -102,6 +104,8 @@ public class MessageConsumerImpl implements MessageConsumer {
                     .message("Item reserved successfully")
                     .build();
             messageProducer.publishItemReservationResult(itemReservationEvent);
+
+            cacheService.evictCachedItem(item.getId());
         } else {
             log.warn("SAGA Failed: Item {} is NOT AVAILABLE (Status: {}) for transaction {}",
                     item.getId(), item.getStatus(), event.getTransactionId());
@@ -136,6 +140,8 @@ public class MessageConsumerImpl implements MessageConsumer {
             itemRepository.save(item);
             log.info("SAGA Processed: Item {} status updated to SOLD due to transaction {} completion",
                     item.getId(), event.getTransactionId());
+
+            cacheService.evictCachedItem(item.getId());
         } else {
             log.warn("SAGA Ignored: Transaction {} completed, but item {} was not in RESERVED status (current: {}).",
                     event.getTransactionId(), item.getId(), item.getStatus());
@@ -166,8 +172,47 @@ public class MessageConsumerImpl implements MessageConsumer {
 
     @Override
     @RabbitListener(queues = "${rabbitmq.queue.payment.item-boost}")
+    @Transactional
     public void handlePaymentEvent(PaymentEvent event) {
-        // TODO document why this method is empty
+        if (event == null || event.getLinkedItemId() == null) {
+            log.warn("Received null payment event or linkedItemId");
+            return;
+        }
+
+        log.info("SAGA Event Received: Payment event for itemId: {}, transactionId: {}, success: {}",
+                event.getLinkedItemId(), event.getLinkedTransactionId(), event.isSuccess());
+
+        try {
+            Item item = itemRepository.findById(event.getLinkedItemId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID: " + event.getLinkedItemId()));
+
+            if (event.isSuccess()) {
+                // Payment completed successfully
+                if (item.getStatus() == ItemStatus.RESERVED) {
+                    item.setStatus(ItemStatus.SOLD);
+                    itemRepository.save(item);
+                    log.info("SAGA Processed: Item {} status updated to SOLD after payment completion", item.getId());
+                } else {
+                    log.warn("SAGA Ignored: Payment completed for item {} but item status is {} (expected RESERVED)",
+                            item.getId(), item.getStatus());
+                }
+            } else {
+                // Payment failed
+                if (item.getStatus() == ItemStatus.RESERVED) {
+                    item.setStatus(ItemStatus.AVAILABLE);
+                    itemRepository.save(item);
+                    log.info("SAGA Processed: Item {} status updated to AVAILABLE after payment failure", item.getId());
+                } else {
+                    log.warn("SAGA Ignored: Payment failed for item {} but item status is {} (expected RESERVED)",
+                            item.getId(), item.getStatus());
+                }
+            }
+        } catch (ResourceNotFoundException e) {
+            log.error("SAGA Failed: Item not found for payment event: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("SAGA Failed: Unexpected error processing payment event for item {}. Error: {}",
+                    event.getLinkedItemId(), e.getMessage(), e);
+        }
     }
 
     @Override

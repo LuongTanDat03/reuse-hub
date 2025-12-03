@@ -33,7 +33,7 @@ public interface ItemRepository extends JpaRepository<Item, String> {
     Page<Item> findByKeyword(@Param("keyword") String keyword,
                                       Pageable pageable);
 
-    Page<Item> findByCategoryAndStatus(String category, ItemStatus status, Pageable pageable);
+    Page<Item> findByCategorySlugAndStatus(String categorySlug, ItemStatus status, Pageable pageable);
 
     @Query("SELECT i FROM Item i " +
             "WHERE i.status = :status " +
@@ -61,8 +61,8 @@ public interface ItemRepository extends JpaRepository<Item, String> {
                                               Pageable pageable);
 
     @Query("SELECT i FROM Item i " +
-            "WHERE i.category = :filter" )
-    Page<Item> findAllPage(String filter,Pageable pageable);
+            "WHERE i.category.slug = :categorySlug" )
+    Page<Item> findAllPageByCategory(@Param("categorySlug") String categorySlug, Pageable pageable);
 
      @Query("SELECT i.status, COUNT(i) FROM Item i GROUP BY i.status")
     List<Object[]> countItemsByStatus();

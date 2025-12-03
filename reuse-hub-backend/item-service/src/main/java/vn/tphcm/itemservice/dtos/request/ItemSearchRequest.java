@@ -17,4 +17,8 @@ import lombok.Getter;
 @Getter
 public class ItemSearchRequest {
     private String keyword;
+    
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
+    }
 }

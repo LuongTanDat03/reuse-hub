@@ -128,12 +128,15 @@ public class ItemController {
     }
 
     @GetMapping("/public/search")
-    public ApiResponse<PageResponse<ItemResponse>> searchItems(@RequestBody ItemSearchRequest request,
+    public ApiResponse<PageResponse<ItemResponse>> searchItems(@RequestParam String keyword,
                                                        @RequestParam(defaultValue = "0") int pageNo,
                                                        @RequestParam(defaultValue = "10") int pageSize,
                                                        @RequestParam(defaultValue = "createdAt") String sortBy,
                                                        @RequestParam(defaultValue = "desc") String sortDirection) {
-        log.info("Received request to search items with criteria: {}", request);
+        log.info("Received request to search items with keyword: {}", keyword);
+        
+        ItemSearchRequest request = new ItemSearchRequest();
+        request.setKeyword(keyword);
 
         return itemService.searchItems(request, pageNo, pageSize, sortBy, sortDirection);
     }
@@ -176,15 +179,24 @@ public class ItemController {
         return itemService.searchItemsNearby(latitude, longitude, radius, pageNo, pageSize, sortBy, sortDirection);
     }
 
-    @GetMapping("/categories")
+    @GetMapping("/public/categories")
     @Operation(summary = "Get all categories", description = "Returns list of all categories for dropdowns")
     public ApiResponse<List<Category>> getAllCategories() {
-        List<Category> categories = categoryRepository.findAll();
+        try {
+            List<Category> categories = categoryRepository.findAllCategories();
 
-        return ApiResponse.<List<Category>>builder()
-                .status(HttpStatus.OK.value())
-                .message("Fetched categories successfully")
-                .data(categories)
-                .build();
+            return ApiResponse.<List<Category>>builder()
+                    .status(HttpStatus.OK.value())
+                    .message("Fetched categories successfully")
+                    .data(categories)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error fetching categories", e);
+            return ApiResponse.<List<Category>>builder()
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .message("Error fetching categories: " + e.getMessage())
+                    .data(null)
+                    .build();
+        }
     }
 }

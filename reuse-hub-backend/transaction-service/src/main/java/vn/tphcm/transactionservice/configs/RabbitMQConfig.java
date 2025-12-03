@@ -54,7 +54,8 @@ public class RabbitMQConfig {
 
     private static final String TX_RESERVED_DLQ_RK = "dlq.tx-reserved";
     private static final String TX_FAILED_DLQ_RK = "dlq.tx-failed";
-    private static final String TX_PAYMENT_DLQ_RK = "dlq.tx-payment";
+    private static final String TX_PAYMENT_DLQ_RK = "dlq.payment-completed";
+
 
     private static final String X_DEAD_LETTER_EXCHANGE = "x-dead-letter-exchange";
     private static final String X_DEAD_LETTER_ROUTING_KEY = "x-dead-letter-routing-key";

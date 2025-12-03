@@ -21,4 +21,5 @@ public class SignInResponse {
     private String accessToken;
     private String refreshToken;
     private String usernameOrEmail;
+    private String userId;
 }

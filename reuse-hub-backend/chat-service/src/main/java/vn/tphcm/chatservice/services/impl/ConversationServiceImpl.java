@@ -78,7 +78,7 @@ public class ConversationServiceImpl implements ConversationService {
 
         response.setItemId(itemResponse.getData().getId());
         response.setItemTitle(itemResponse.getData().getTitle());
-        response.setItemThumbnail(itemResponse.getData().getImages().getFirst());
+        response.setItemThumbnail(itemResponse.getData().getImages().get(0));
 
         return ApiResponse.<ConversationResponse>builder()
                 .status(CREATED.value())
@@ -113,7 +113,7 @@ public class ConversationServiceImpl implements ConversationService {
 
         response.setItemId(itemResponse.getData().getId());
         response.setItemTitle(itemResponse.getData().getTitle());
-        response.setItemThumbnail(itemResponse.getData().getImages().getFirst());
+        response.setItemThumbnail(itemResponse.getData().getImages().get(0));
 
         return ApiResponse.<ConversationResponse>builder()
                 .status(OK.value())

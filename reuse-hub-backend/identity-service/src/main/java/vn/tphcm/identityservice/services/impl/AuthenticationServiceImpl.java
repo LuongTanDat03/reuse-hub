@@ -134,6 +134,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                         .accessToken(accessToken)
                         .refreshToken(refreshToken)
                         .usernameOrEmail(request.getUsernameOrEmail())
+                        .userId(user.getId())
                         .build())
                 .timestamp(OffsetDateTime.now()).build();
     }

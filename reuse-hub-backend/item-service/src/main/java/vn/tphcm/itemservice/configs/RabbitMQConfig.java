@@ -70,7 +70,7 @@ public class RabbitMQConfig {
 
     @Value("${rabbitmq.routing-key.payment.completed}")
     private String paymentCompletedRK;
-    @Value("${rabbitmq.routing-key.payment.cancelled}")
+    @Value("${rabbitmq.routing-key.payment.failed}")
     private String paymentFailedRK;
     @Value("${rabbitmq.queue.payment.item-boost}")
     private String itemPaymentQueue;

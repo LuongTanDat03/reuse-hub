@@ -53,4 +53,11 @@ public class IdentityFeignController {
 
         return userService.updateStatusUser(userId, status);
     }
+
+    @PutMapping("/{userId}/password")
+    public ApiResponse<Void> resetPassword(@PathVariable String userId, @RequestBody String newPassword) {
+        log.info("Feign request to reset password - userId: {}", userId);
+
+        return userService.resetPassword(userId, newPassword);
+    }
 }

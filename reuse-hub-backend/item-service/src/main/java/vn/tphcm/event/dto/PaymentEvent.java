@@ -26,4 +26,5 @@ public class PaymentEvent {
     private Long amount;
     private String currency;
     private String message;
+    private boolean success;
 }

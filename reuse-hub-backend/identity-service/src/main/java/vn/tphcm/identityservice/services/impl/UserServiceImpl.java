@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.tphcm.identityservice.clients.ProfileClient;
 import vn.tphcm.identityservice.commons.UserStatus;
@@ -44,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final ProfileMapper profileMapper;
     private final ProfileClient profileClient;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public ApiResponse<PageResponse<InfoUserResponse>> getAllUsers(int pageNo, int pageSize, String sortBy, String sortDirection) {
@@ -130,6 +132,24 @@ public class UserServiceImpl implements UserService {
         return ApiResponse.<Void>builder()
                 .status(OK.value())
                 .message("Update user status successfully")
+                .data(null)
+                .build();
+    }
+
+    @Override
+    public ApiResponse<Void> resetPassword(String userId, String newPassword) {
+        log.info("UserService - resetPassword: Resetting password for userId={}", userId);
+        
+        userRepository.findById(userId).ifPresent(user -> {
+            String encodedPassword = passwordEncoder.encode(newPassword);
+            user.setPassword(encodedPassword);
+            userRepository.save(user);
+            log.info("Password reset successfully for userId={}", userId);
+        });
+
+        return ApiResponse.<Void>builder()
+                .status(OK.value())
+                .message("Password reset successfully")
                 .data(null)
                 .build();
     }

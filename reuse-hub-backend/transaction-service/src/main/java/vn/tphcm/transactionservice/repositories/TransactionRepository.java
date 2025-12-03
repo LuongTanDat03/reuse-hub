@@ -55,7 +55,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
             "WHERE t.itemId = :itemId " +
             "AND t.buyerId = :buyerId " +
             "AND t.status = 'PENDING'")
-    boolean hasActiveTransactionForItem(@Param("itemId") String itemId, @Param("userId") String userId);
+    boolean hasActiveTransactionForItem(@Param("itemId") String itemId, @Param("buyerId") String buyerId);
 
     @Query("SELECT t FROM Transaction t")
     Page<Transaction> findAllPage(Pageable pageable);

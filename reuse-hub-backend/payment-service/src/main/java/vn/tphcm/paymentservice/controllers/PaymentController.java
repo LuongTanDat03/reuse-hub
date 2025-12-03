@@ -12,6 +12,7 @@ package vn.tphcm.paymentservice.controllers;
 
 import com.stripe.exception.StripeException;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +43,7 @@ public class PaymentController {
             description = "Called by the client (web/app) to initialize a payment with Stripe. " +
                     "Returns a clientSecret to be used with Stripe.js on the frontend.")
     public ApiResponse<PaymentResponse> createPaymentIntent(@RequestHeader("X-User-Id") String userIdHeader,
-                                                            @RequestBody CreatePaymentRequest request) {
+                                                            @RequestBody @Valid CreatePaymentRequest request) {
 
         String userId = getUserIdFromHeader(userIdHeader);
         log.info("User {} is creating a payment intent for amount {}", userId, request.getAmount());
@@ -79,5 +80,14 @@ public class PaymentController {
                                                                   @PathVariable String transactionId) {
         String userId = getUserIdFromHeader(userIdHeader);
         return paymentService.getPaymentByTransactionId(transactionId, userId);
+    }
+
+    @PostMapping("/{paymentId}/sync-status")
+    @Operation(summary = "Sync Payment Status from Stripe (for testing/debugging)",
+            description = "Manually sync payment status from Stripe. Use when webhook is not configured.")
+    public ApiResponse<PaymentResponse> syncPaymentStatus(@RequestHeader("X-User-Id") String userIdHeader,
+                                                          @PathVariable String paymentId) {
+        String userId = getUserIdFromHeader(userIdHeader);
+        return paymentService.syncPaymentStatusFromStripe(paymentId, userId);
     }
 }

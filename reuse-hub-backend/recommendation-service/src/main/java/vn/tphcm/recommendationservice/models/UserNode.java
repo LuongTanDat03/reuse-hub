@@ -25,5 +25,4 @@ import org.springframework.data.neo4j.core.schema.Node;
 public class UserNode{
     @Id
     private String userId;
-
 }

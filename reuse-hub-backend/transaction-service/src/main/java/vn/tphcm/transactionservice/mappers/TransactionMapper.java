@@ -16,9 +16,11 @@ import vn.tphcm.transactionservice.dtos.request.CreateTransactionRequest;
 import vn.tphcm.transactionservice.dtos.response.TransactionResponse;
 import vn.tphcm.transactionservice.models.Transaction;
 
+import org.mapstruct.Mapping;
+
 @Mapper(componentModel = "spring")
 public interface TransactionMapper {
     Transaction toTransaction(CreateTransactionRequest request);
-
+    
     TransactionResponse toResponse(Transaction transaction);
 }

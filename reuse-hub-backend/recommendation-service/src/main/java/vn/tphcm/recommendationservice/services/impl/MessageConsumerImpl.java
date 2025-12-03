@@ -27,7 +27,7 @@ public class MessageConsumerImpl implements MessageConsumer {
     private final RecommendationService recommendationService;
 
     @Override
-    @RabbitListener(queues = "q.recommendation.data")
+    @RabbitListener(queues = "q.recommendation.events")
     public void handleEvent(Object message) {
         try{
             if (message instanceof LinkedHashMap){

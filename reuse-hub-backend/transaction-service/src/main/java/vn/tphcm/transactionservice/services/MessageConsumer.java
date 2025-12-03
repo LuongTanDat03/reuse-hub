@@ -11,9 +11,12 @@ package vn.tphcm.transactionservice.services;
  */
 
 import vn.tphcm.event.dto.ItemReservationEvent;
+import vn.tphcm.event.dto.PaymentEvent;
 
 public interface MessageConsumer {
     void handleItemReserved(ItemReservationEvent event);
 
     void handleItemReservationFailed(ItemReservationEvent event);
+
+    void handlePaymentEvent(PaymentEvent event);
 }

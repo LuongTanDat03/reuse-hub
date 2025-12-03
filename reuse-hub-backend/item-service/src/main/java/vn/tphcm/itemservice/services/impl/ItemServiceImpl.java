@@ -480,7 +480,7 @@ public class ItemServiceImpl implements ItemService {
 
         Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
 
-        Page<Item> itemsPage = itemRepository.findByCategoryAndStatus(categorySlug, ItemStatus.AVAILABLE, pageable);
+        Page<Item> itemsPage = itemRepository.findByCategorySlugAndStatus(categorySlug, ItemStatus.AVAILABLE, pageable);
 
         Page<ItemResponse> responsePage = itemsPage.map(itemMapper::toResponse);
 
@@ -574,7 +574,7 @@ public class ItemServiceImpl implements ItemService {
     public ApiResponse<PageResponse<ItemResponse>> getItems(int pageNo, int pageSize, String sortBy, String sortDirection, String filter) {
         Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
 
-        Page<Item> items = itemRepository.findAllPage(filter, pageable);
+        Page<Item> items = itemRepository.findAllPageByCategory(filter, pageable);
 
         Page<ItemResponse> responsePage = items.map(itemMapper::toResponse);
 
