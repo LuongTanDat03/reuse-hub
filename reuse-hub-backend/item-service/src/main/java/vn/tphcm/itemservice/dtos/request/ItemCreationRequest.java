@@ -1,0 +1,28 @@
+/*
+ * @ (#) ItemCreationRequest.java       1.0     9/19/2025
+ *
+ * Copyright (c) 2025. All rights reserved.
+ */
+
+package vn.tphcm.itemservice.dtos.request;
+/*
+ * @author: Luong Tan Dat
+ * @date: 9/19/2025
+ */
+
+import lombok.Getter;
+
+@Getter
+public class ItemCreationRequest {
+    private String title;
+
+    private String description;
+
+    private String categoryId;
+
+    private Long price;
+
+    private String address;
+
+    private LocationRequest location;
+}

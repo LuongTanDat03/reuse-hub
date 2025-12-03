@@ -1,0 +1,29 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: discovery-service
+  security:
+    user:
+      name: ${EUREKA_USER:admin}
+      password: ${EUREKA_PASSWORD:password}
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    registry-sync-retry-wait-ms: 0
+    enable-self-preservation: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+logging:
+  level:
+    com.netflix.eureka: OFF
+    com.netflix.discovery: OFF

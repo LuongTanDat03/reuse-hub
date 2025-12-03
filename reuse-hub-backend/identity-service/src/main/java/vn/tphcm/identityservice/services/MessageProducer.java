@@ -1,0 +1,23 @@
+/*
+ * @ (#) VerificationPublisher.java       1.0     8/18/2025
+ *
+ * Copyright (c) 2025. All rights reserved.
+ */
+
+package vn.tphcm.identityservice.services;
+
+/*
+ * @author: Luong Tan Dat
+ * @date: 8/18/2025
+ */
+
+import org.springframework.stereotype.Service;
+import vn.tphcm.event.dto.NotificationMessage;
+import vn.tphcm.identityservice.dtos.request.ProfileUserRequest;
+
+@Service
+public interface MessageProducer {
+    void publishVerificationEmail(NotificationMessage event);
+
+    void publishProfileCreation(ProfileUserRequest request);
+}

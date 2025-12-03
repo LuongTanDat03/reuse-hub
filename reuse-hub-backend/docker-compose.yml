@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # UI quản trị
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j
+    restart: always
+    environment:
+      - NEO4J_AUTH=neo4j/12345678
+    ports:
+      - "7474:7474"
+      - "7687:7687"

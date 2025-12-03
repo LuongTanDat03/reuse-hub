@@ -1,0 +1,70 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Application Configuration (contains secrets)
+**/application-dev.yml
+**/application-prod.yml
+**/application-local.yml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# Build
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+gradle/
+
+# Node (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+
+# Secrets
+secrets/
+credentials/
+*.pem
+*.key
+*.crt
+
+# Backup files
+*.bak
+*.backup

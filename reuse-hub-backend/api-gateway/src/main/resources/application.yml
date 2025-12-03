@@ -1,0 +1,96 @@
+server:
+  port: 8080
+
+app:
+  api-prefix: /api/v1
+
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: @spring.profiles.active@
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+          routes:
+            - id: identity-service
+              uri: lb://identity-service
+              predicates:
+                - Path=${app.api-prefix}/identity/**
+              filters:
+                - StripPrefix=2
+
+            - id: profile-service
+              uri: lb://profile-service
+              predicates:
+                - Path=${app.api-prefix}/profile/**
+              filters:
+                - StripPrefix=2
+
+            - id: item-service
+              uri: lb://item-service
+              predicates:
+                - Path=${app.api-prefix}/items/**
+              filters:
+                - StripPrefix=2
+
+            - id: transaction-service
+              uri: lb://transaction-service
+              predicates:
+                - Path=${app.api-prefix}/transactions/**
+              filters:
+                - StripPrefix=2
+
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=${app.api-prefix}/notifications/**
+              filters:
+                - StripPrefix=2
+
+            - id: chat-service
+              uri: lb://chat-service
+              predicates:
+                - Path=${app.api-prefix}/chats/**
+              filters:
+                - StripPrefix=2
+
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=${app.api-prefix}/payments/**
+              filters:
+                - StripPrefix=2
+
+            - id: recommendation-service
+              uri: lb://recommendation-service
+              predicates:
+                - Path=${app.api-prefix}/recommendations/**
+              filters:
+                - StripPrefix=2
+
+            - id: admin-service
+              uri: lb://admin-service
+              predicates:
+                - Path=${app.api-prefix}/admin/**
+              filters:
+                - StripPrefix=2
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_USER:admin}:${EUREKA_PASSWORD:password}@${DISCOVERY_SERVER:localhost}:8761/eureka
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+
