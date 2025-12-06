@@ -150,11 +150,24 @@ public class TransactionServiceImpl implements TransactionService {
         publishTransactionEvent(transaction, EventType.COMPLETED, "Transaction completed successfully.");
         publishTransactionUpdate(transaction, oldStatus, "Transaction completed");
 
+        // Calculate 90% for seller wallet
+        Long sellerAmount = (long) (transaction.getTotalAmount() * 0.9);
+        WalletEvent walletEvent = WalletEvent.builder()
+                .userId(transaction.getSellerId())
+                .amount(sellerAmount)
+                .transactionId(transaction.getId())
+                .itemId(transaction.getItemId())
+                .description("Payment received for item: " + transaction.getItemTitle())
+                .build();
+        messagePublisher.publishWalletEvent(walletEvent);
+        log.info("Wallet credit event published for seller {}: {} VND (90% of {})", 
+                 transaction.getSellerId(), sellerAmount, transaction.getTotalAmount());
+
         NotificationMessage notification = NotificationMessage.builder()
                 .notificationId(UUID.randomUUID().toString())
                 .recipientUserId(transaction.getSellerId())
                 .title("Transaction Completed")
-                .message("The transaction for your item '" + transaction.getItemTitle() + "' has been completed by the buyer.")
+                .message("The transaction for your item '" + transaction.getItemTitle() + "' has been completed by the buyer. " + sellerAmount + " VND has been added to your wallet.")
                 .type(EventType.COMPLETED)
                 .itemId(transaction.getItemId())
                 .transactionId(transaction.getId())
@@ -539,6 +552,11 @@ public class TransactionServiceImpl implements TransactionService {
                     .transactionId(transaction.getId())
                     .build();
             messagePublisher.publishNotification(notification);
+            
+            log.info("Transaction {} status updated to PAYMENT_COMPLETED", transactionId);
+        } else {
+            log.warn("SAGA Ignored: Payment completed for transaction {} but status is {} (expected PENDING or ACCEPTED)",
+                    transactionId, transaction.getStatus());
         }
     }
 

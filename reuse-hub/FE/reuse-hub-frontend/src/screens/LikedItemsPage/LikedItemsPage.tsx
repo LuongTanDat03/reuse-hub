@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import * as itemsAPI from '../../api/items';
+import * as itemsAPI from '../../api/item';
 import ItemCard from '../../components/ItemCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Pagination from '../../components/Pagination';

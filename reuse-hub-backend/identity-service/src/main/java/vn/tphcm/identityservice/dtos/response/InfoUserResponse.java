@@ -29,5 +29,6 @@ public class InfoUserResponse {
     private String firstName;
     private String lastName;
     private String avatarUrl;
+    private Long wallet;
     private List<AddressResponse> address;
 }

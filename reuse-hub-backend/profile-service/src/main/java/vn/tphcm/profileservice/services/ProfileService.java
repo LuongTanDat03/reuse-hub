@@ -30,4 +30,8 @@ public interface ProfileService {
     ApiResponse<ProfileResponse> updateProfile(ProfileUpdateRequest request, MultipartFile file);
 
     ApiResponse<List<ProfileResponse>> getProfilesByUserIds(List<String> userIds);
+
+    ApiResponse<Long> getWalletBalance(String userId);
+
+    ApiResponse<Long> getTotalWalletBalance();
 }

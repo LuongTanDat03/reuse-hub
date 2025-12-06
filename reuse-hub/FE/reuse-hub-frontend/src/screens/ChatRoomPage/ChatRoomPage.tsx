@@ -13,6 +13,7 @@ const ChatRoomPage: React.FC = () => {
     messages,
     loading,
     error,
+    isConnected,
     sendMessage,
     loadMoreMessages,
     hasMore,
@@ -90,42 +91,71 @@ const ChatRoomPage: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b px-4 py-3 flex items-center gap-4">
-        <button
-          onClick={() => navigate('/chat')}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+      <div className="bg-white border-b">
+        <div className="px-4 py-3 flex items-center gap-4">
+          <button
+            onClick={() => navigate('/chat')}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-        {otherUser && (
-          <>
-            {otherUser.avatar ? (
-              <img
-                src={otherUser.avatar}
-                alt={otherUser.name}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                {otherUser.name.charAt(0).toUpperCase()}
+          {otherUser && (
+            <>
+              {otherUser.avatar ? (
+                <img
+                  src={otherUser.avatar}
+                  alt={otherUser.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                  {otherUser.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1">
+                <h2 className="font-semibold">{otherUser.name}</h2>
+                <p className="text-sm text-gray-500">
+                  {isConnected ? 'Đang hoạt động' : 'Đang kết nối...'}
+                </p>
               </div>
-            )}
-            <div className="flex-1">
-              <h2 className="font-semibold">{otherUser.name}</h2>
-              <p className="text-sm text-gray-500">Đang hoạt động</p>
+              <button
+                onClick={() => navigate(`/profile/${otherUser.id}`)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Item info card (if available) - Sticky */}
+        {currentRoom?.itemId && (
+          <div className="sticky top-0 z-10 px-4 pb-3 bg-white border-b shadow-sm">
+            <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3">
+              {currentRoom.itemThumbnail && (
+                <img 
+                  src={currentRoom.itemThumbnail} 
+                  alt={currentRoom.itemTitle}
+                  className="w-16 h-16 rounded object-cover"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate">{currentRoom.itemTitle || 'Sản phẩm'}</div>
+                <div className="text-xs text-gray-500">Sản phẩm đang trao đổi</div>
+              </div>
+              <button
+                onClick={() => navigate(`/product/${currentRoom.itemId}`)}
+                className="text-blue-600 text-xs hover:underline whitespace-nowrap"
+              >
+                Xem chi tiết
+              </button>
             </div>
-            <button
-              onClick={() => navigate(`/profile/${otherUser.id}`)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-          </>
+          </div>
         )}
       </div>
 
@@ -265,7 +295,7 @@ const ChatRoomPage: React.FC = () => {
 
           <button
             onClick={handleSend}
-            disabled={(!messageText.trim() && !selectedFile) || sending}
+            disabled={(!messageText.trim() && !selectedFile) || sending || !isConnected}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {sending ? (

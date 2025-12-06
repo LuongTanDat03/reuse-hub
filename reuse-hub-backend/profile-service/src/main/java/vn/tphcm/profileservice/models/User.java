@@ -73,6 +73,8 @@ public class User extends AbstractEntity<String> implements Serializable {
     @JdbcTypeCode(SqlTypes.JSON)
     private String preferences;
 
+    private Long wallet;
+
     @Column(name = "username", nullable = false, unique = true)
     private String username;
 

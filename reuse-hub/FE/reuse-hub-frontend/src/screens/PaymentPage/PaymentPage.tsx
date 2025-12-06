@@ -35,8 +35,15 @@ export const PaymentPage: React.FC = () => {
 
   const handlePaymentSuccess = useCallback((paymentId: string) => {
     console.log('Payment successful:', paymentId);
-    navigate('/transactions');
-  }, [navigate]);
+    // Wait a bit for backend to process payment event
+    setTimeout(() => {
+      if (paymentParams.transactionId) {
+        navigate(`/transactions/${paymentParams.transactionId}`);
+      } else {
+        navigate('/transactions');
+      }
+    }, 1500);
+  }, [navigate, paymentParams.transactionId]);
 
   const handlePaymentError = useCallback((error: string) => {
     console.error('Payment error:', error);

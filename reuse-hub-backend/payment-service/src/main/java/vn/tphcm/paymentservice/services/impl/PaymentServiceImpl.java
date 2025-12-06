@@ -153,7 +153,6 @@ public class PaymentServiceImpl implements PaymentService {
     public void handleStripeWebhook(String payload, String sigHeader) {
        Event event;
         try {
-            // Create payload
             event = Webhook.constructEvent(payload, sigHeader, stripeWebhookSecret);
         } catch (SignatureVerificationException e) {
             log.error("Webhook Error: Invalid Stripe signature.", e);
@@ -163,13 +162,11 @@ public class PaymentServiceImpl implements PaymentService {
             throw new InvalidDataException("Error processing webhook payload.");
         }
 
-        // Check for duplicate webhook events (idempotency)
         if (webhookEventRepository.existsByStripeEventId(event.getId())) {
             log.warn("Duplicate webhook event received: {}. Skipping processing.", event.getId());
             return;
         }
 
-        // Save webhook event for audit trail
         WebhookEvent webhookEvent = WebhookEvent.builder()
                 .stripeEventId(event.getId())
                 .eventType(event.getType())
@@ -177,6 +174,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .receivedAt(LocalDateTime.now())
                 .processed(false)
                 .build();
+
         webhookEvent = webhookEventRepository.save(webhookEvent);
         log.info("Webhook event saved: id={}, type={}", webhookEvent.getId(), event.getType());
 

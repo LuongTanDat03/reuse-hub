@@ -52,33 +52,115 @@ public class ConversationServiceImpl implements ConversationService {
         if (!conversations.isEmpty()) {
             Conversation existing = conversations.get(0);
             log.info("Found existing conversation: {}", existing.getId());
+            
+            ConversationResponse response = conversationMapper.toResponse(existing);
+            
+            // Fetch other participant profile
+            try {
+                ApiResponse<ProfileResponse> profileResponse = profileClient.getProfile(userSecondId);
+                if (profileResponse != null && profileResponse.getData() != null) {
+                    ProfileResponse profile = profileResponse.getData();
+                    response.setOtherParticipantAvatar(profile.getAvatarUrl());
+                    response.setOtherParticipantName(
+                        (profile.getFirstName() != null ? profile.getFirstName() : "") + " " + 
+                        (profile.getLastName() != null ? profile.getLastName() : "")
+                    );
+                    response.setOtherParticipantId(profile.getUserId());
+                } else {
+                    response.setOtherParticipantId(userSecondId);
+                }
+            } catch (Exception e) {
+                log.error("Error fetching profile for user {}: {}", userSecondId, e.getMessage());
+                response.setOtherParticipantId(userSecondId);
+            }
+            
+            // Fetch item details if itemId is provided
+            if (itemId != null && !itemId.isBlank()) {
+                try {
+                    ApiResponse<ItemResponse> itemResponse = itemServiceClient.getItemById(itemId);
+                    if (itemResponse != null && itemResponse.getData() != null) {
+                        ItemResponse item = itemResponse.getData();
+                        response.setItemId(item.getId());
+                        response.setItemTitle(item.getTitle());
+                        if (item.getImages() != null && !item.getImages().isEmpty()) {
+                            response.setItemThumbnail(item.getImages().get(0));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error fetching item {}: {}", itemId, e.getMessage());
+                }
+            }
+            
             return ApiResponse.<ConversationResponse>builder()
                     .status(OK.value())
-                    .data(conversationMapper.toResponse(existing))
+                    .data(response)
                     .message("Conversation already exists.")
                     .build();
         }
 
         // Create new conversation
-        Conversation conversation = Conversation.builder()
-                .participantIds(List.of(userFirstId, userSecondId))
-                .build();
-
+        Conversation.ConversationBuilder conversationBuilder = Conversation.builder()
+                .participantIds(List.of(userFirstId, userSecondId));
+        
+        // Fetch and save item info if itemId is provided
+        if (itemId != null && !itemId.isBlank()) {
+            try {
+                ApiResponse<ItemResponse> itemResponse = itemServiceClient.getItemById(itemId);
+                if (itemResponse != null && itemResponse.getData() != null) {
+                    ItemResponse item = itemResponse.getData();
+                    conversationBuilder
+                        .itemId(item.getId())
+                        .itemTitle(item.getTitle());
+                    if (item.getImages() != null && !item.getImages().isEmpty()) {
+                        conversationBuilder.itemThumbnail(item.getImages().get(0));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error fetching item {} during conversation creation: {}", itemId, e.getMessage());
+            }
+        }
+        
+        Conversation conversation = conversationBuilder.build();
         conversation = conversationRepository.save(conversation);
-
-        ApiResponse<ProfileResponse> profileResponse = profileClient.getProfile(userSecondId);
 
         ConversationResponse response = conversationMapper.toResponse(conversation);
 
-        response.setOtherParticipantAvatar(profileResponse.getData().getAvatarUrl());
-        response.setOtherParticipantName(profileResponse.getData().getFirstName() + " " + profileResponse.getData().getLastName());
-        response.setOtherParticipantId(profileResponse.getData().getUserId());
+        // Fetch other participant profile
+        try {
+            ApiResponse<ProfileResponse> profileResponse = profileClient.getProfile(userSecondId);
+            if (profileResponse != null && profileResponse.getData() != null) {
+                ProfileResponse profile = profileResponse.getData();
+                response.setOtherParticipantAvatar(profile.getAvatarUrl());
+                response.setOtherParticipantName(
+                    (profile.getFirstName() != null ? profile.getFirstName() : "") + " " + 
+                    (profile.getLastName() != null ? profile.getLastName() : "")
+                );
+                response.setOtherParticipantId(profile.getUserId());
+            } else {
+                log.warn("Profile not found for user: {}", userSecondId);
+                response.setOtherParticipantId(userSecondId);
+            }
+        } catch (Exception e) {
+            log.error("Error fetching profile for user {}: {}", userSecondId, e.getMessage());
+            response.setOtherParticipantId(userSecondId);
+        }
 
-        ApiResponse<ItemResponse> itemResponse = itemServiceClient.getItemById(itemId);
-
-        response.setItemId(itemResponse.getData().getId());
-        response.setItemTitle(itemResponse.getData().getTitle());
-        response.setItemThumbnail(itemResponse.getData().getImages().get(0));
+        // Fetch item details if itemId is provided
+        if (itemId != null && !itemId.isBlank()) {
+            try {
+                ApiResponse<ItemResponse> itemResponse = itemServiceClient.getItemById(itemId);
+                if (itemResponse != null && itemResponse.getData() != null) {
+                    ItemResponse item = itemResponse.getData();
+                    response.setItemId(item.getId());
+                    response.setItemTitle(item.getTitle());
+                    if (item.getImages() != null && !item.getImages().isEmpty()) {
+                        response.setItemThumbnail(item.getImages().get(0));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error fetching item {}: {}", itemId, e.getMessage());
+            }
+        }
 
         return ApiResponse.<ConversationResponse>builder()
                 .status(CREATED.value())
@@ -99,21 +181,44 @@ public class ConversationServiceImpl implements ConversationService {
 
         Conversation conversation = conversations.get(0);
 
-        conversation = conversationRepository.save(conversation);
-
-        ApiResponse<ProfileResponse> profileResponse = profileClient.getProfile(userSecondId);
-
         ConversationResponse response = conversationMapper.toResponse(conversation);
 
-        response.setOtherParticipantAvatar(profileResponse.getData().getAvatarUrl());
-        response.setOtherParticipantName(profileResponse.getData().getFirstName() + " " + profileResponse.getData().getLastName());
-        response.setOtherParticipantId(profileResponse.getData().getUserId());
+        // Fetch other participant profile
+        try {
+            ApiResponse<ProfileResponse> profileResponse = profileClient.getProfile(userSecondId);
+            if (profileResponse != null && profileResponse.getData() != null) {
+                ProfileResponse profile = profileResponse.getData();
+                response.setOtherParticipantAvatar(profile.getAvatarUrl());
+                response.setOtherParticipantName(
+                    (profile.getFirstName() != null ? profile.getFirstName() : "") + " " + 
+                    (profile.getLastName() != null ? profile.getLastName() : "")
+                );
+                response.setOtherParticipantId(profile.getUserId());
+            } else {
+                log.warn("Profile not found for user: {}", userSecondId);
+                response.setOtherParticipantId(userSecondId);
+            }
+        } catch (Exception e) {
+            log.error("Error fetching profile for user {}: {}", userSecondId, e.getMessage());
+            response.setOtherParticipantId(userSecondId);
+        }
 
-        ApiResponse<ItemResponse> itemResponse = itemServiceClient.getItemById(itemId);
-
-        response.setItemId(itemResponse.getData().getId());
-        response.setItemTitle(itemResponse.getData().getTitle());
-        response.setItemThumbnail(itemResponse.getData().getImages().get(0));
+        // Fetch item details if itemId is provided
+        if (itemId != null && !itemId.isBlank()) {
+            try {
+                ApiResponse<ItemResponse> itemResponse = itemServiceClient.getItemById(itemId);
+                if (itemResponse != null && itemResponse.getData() != null) {
+                    ItemResponse item = itemResponse.getData();
+                    response.setItemId(item.getId());
+                    response.setItemTitle(item.getTitle());
+                    if (item.getImages() != null && !item.getImages().isEmpty()) {
+                        response.setItemThumbnail(item.getImages().get(0));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error fetching item {}: {}", itemId, e.getMessage());
+            }
+        }
 
         return ApiResponse.<ConversationResponse>builder()
                 .status(OK.value())
@@ -133,11 +238,14 @@ public class ConversationServiceImpl implements ConversationService {
         Page<ConversationResponse> conversationResponsePage = conversationPage.map(conversation -> {
             ConversationResponse response = conversationMapper.toResponse(conversation);
 
+            log.info("Processing conversation: id={}, participantIds={}", conversation.getId(), conversation.getParticipantIds());
+            
             String otherUserId = response.getParticipantIds().stream()
                     .filter(id -> !id.equals(userId))
                     .findFirst()
                     .orElse(null);
 
+            log.info("Determined otherUserId: {} for currentUserId: {}", otherUserId, userId);
             response.setOtherParticipantId(otherUserId);
 
             if (otherUserId != null) {

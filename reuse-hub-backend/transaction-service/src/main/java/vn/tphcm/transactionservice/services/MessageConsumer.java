@@ -10,11 +10,15 @@ package vn.tphcm.transactionservice.services;
  * @date: 10/28/2025
  */
 
+import com.rabbitmq.client.Channel;
+import org.springframework.amqp.core.Message;
 import vn.tphcm.event.dto.ItemReservationEvent;
 import vn.tphcm.event.dto.PaymentEvent;
 
+import java.io.IOException;
+
 public interface MessageConsumer {
-    void handleItemReserved(ItemReservationEvent event);
+    void handleItemReserved(ItemReservationEvent event, Channel channel, Message message) throws IOException;
 
     void handleItemReservationFailed(ItemReservationEvent event);
 

@@ -81,15 +81,15 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public ApiResponse<DashboardItemResponse> getAllItems(int pageNo, int pageSize, String sortBy, String sortDirection, String filter) {
-        log.info("AdminServiceImpl - getAllItems: Start fetching all items with pageNo={}, pageSize={}, sortBy={}, sortDirection={}",
-                pageNo, pageSize, sortBy, sortDirection);
+    public ApiResponse<DashboardItemResponse> getAllItems(int pageNo, int pageSize, String sortBy, String sortDirection, String filter, String categorySlug) {
+        log.info("AdminServiceImpl - getAllItems: Start fetching all items with pageNo={}, pageSize={}, sortBy={}, sortDirection={}, filter={}, categorySlug={}",
+                pageNo, pageSize, sortBy, sortDirection, filter, categorySlug);
 
         long startTime = System.currentTimeMillis();
 
         CompletableFuture<PageResponse<ItemResponse>> itemFuture = CompletableFuture.supplyAsync(() -> {
-            log.info("Thread {}: Bắt đầu gọi getAllItems", Thread.currentThread().getName());
-            return itemClient.getAllItems(pageNo, pageSize, sortBy, sortDirection, filter).getData();
+            log.info("Thread {}: Bắt đầu gọi getAllItems with filter={}, categorySlug={}", Thread.currentThread().getName(), filter, categorySlug);
+            return itemClient.getAllItems(pageNo, pageSize, sortBy, sortDirection, filter, categorySlug).getData();
         }, executor).exceptionally(ex -> {
             log.error("Error fetching items: {}", ex.getMessage());
             return null;

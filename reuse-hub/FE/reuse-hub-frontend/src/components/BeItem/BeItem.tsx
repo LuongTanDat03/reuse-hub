@@ -27,9 +27,6 @@ export const BeItem: React.FC<BeItemProps> = ({
   const [price, setPrice] = useState(initialData?.price?.toString() || "");
   const [description, setDescription] = useState(initialData?.description || "");
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || "");
-  const [tags, setTags] = useState(
-    initialData?.tags?.join(", ") || ""
-  );
   const [address, setAddress] = useState(initialData?.address || "");
   const [latitude, setLatitude] = useState(
     initialData?.location?.latitude?.toString() || "10.7769"
@@ -41,6 +38,7 @@ export const BeItem: React.FC<BeItemProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
   
   // Constants for file validation
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -215,6 +213,78 @@ export const BeItem: React.FC<BeItemProps> = ({
     return Object.keys(next).length === 0;
   };
 
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      alert('Trình duyệt của bạn không hỗ trợ định vị');
+      return;
+    }
+
+    setGettingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        
+        try {
+          // Reverse geocoding using Nominatim (OpenStreetMap)
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`
+          );
+          const data = await response.json();
+          
+          // Extract address components
+          const addr = data.address;
+          const addressParts = [];
+          
+          if (addr.road) addressParts.push(addr.road);
+          if (addr.suburb || addr.neighbourhood) addressParts.push(addr.suburb || addr.neighbourhood);
+          if (addr.city_district || addr.district) addressParts.push(addr.city_district || addr.district);
+          if (addr.city || addr.town) addressParts.push(addr.city || addr.town);
+          
+          const formattedAddress = addressParts.join(', ') || data.display_name;
+          
+          setAddress(formattedAddress);
+          setLatitude(lat.toString());
+          setLongitude(lng.toString());
+          
+          alert(`Đã lấy vị trí thành công!\nVĩ độ: ${lat.toFixed(6)}\nKinh độ: ${lng.toFixed(6)}`);
+        } catch (error) {
+          console.error('Error getting address:', error);
+          // Still save coordinates even if address lookup fails
+          setLatitude(lat.toString());
+          setLongitude(lng.toString());
+          alert(`Đã lấy tọa độ thành công!\nVĩ độ: ${lat.toFixed(6)}\nKinh độ: ${lng.toFixed(6)}\n\nVui lòng nhập địa chỉ thủ công.`);
+        } finally {
+          setGettingLocation(false);
+        }
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        let errorMessage = 'Không thể lấy vị trí';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng bật quyền trong cài đặt trình duyệt.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Thông tin vị trí không khả dụng';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Yêu cầu lấy vị trí đã hết thời gian';
+            break;
+        }
+        
+        alert(errorMessage);
+        setGettingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -230,10 +300,6 @@ export const BeItem: React.FC<BeItemProps> = ({
         longitude: Number(longitude),
       },
     };
-    
-    // Note: Tags are not supported in creation request yet
-    // They can be added later via update if needed
-
     await onSubmit(itemData, images);
   };
 
@@ -295,15 +361,35 @@ export const BeItem: React.FC<BeItemProps> = ({
                 <p className="text-sm text-red-600">{errors.categoryId}</p>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-2">
               <Label htmlFor="address">Địa chỉ *</Label>
-              <Input
-                id="address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Ví dụ: 123 Đường Nguyễn Huệ, Q1, TPHCM"
-                disabled={submitting}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Ví dụ: 123 Đường Nguyễn Huệ, Q1, TPHCM"
+                  disabled={submitting}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  onClick={getCurrentLocation}
+                  disabled={gettingLocation || submitting}
+                  className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
+                >
+                  {gettingLocation ? (
+                    <>
+                      <span className="inline-block animate-spin mr-2">⟳</span>
+                      Đang lấy...
+                    </>
+                  ) : (
+                    <>
+                      📍 Vị trí hiện tại
+                    </>
+                  )}
+                </Button>
+              </div>
               {errors.address && (
                 <p className="text-sm text-red-600">{errors.address}</p>
               )}

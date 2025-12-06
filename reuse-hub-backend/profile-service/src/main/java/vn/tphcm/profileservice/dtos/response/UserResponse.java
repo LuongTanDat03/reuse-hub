@@ -30,5 +30,7 @@ public class UserResponse {
 
     private String password;
 
+    private double wallet;
+
     private Set<UserHasRoleResponse> userRoles;
 }

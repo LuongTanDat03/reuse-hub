@@ -27,6 +27,10 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_PROFILE = "ex.profile";
     public static final String RK_PROFILE_CREATE = "rk.profile.create";
     public static final String Q_PROFILE_CREATE = "q.profile.create";
+    
+    public static final String EXCHANGE_TRANSACTION = "ex.transaction";
+    public static final String RK_WALLET_CREDIT = "r.wallet.credit";
+    public static final String Q_WALLET_CREDIT = "q.wallet.credit";
 
     @Bean
     public TopicExchange profileExchange() {
@@ -44,6 +48,24 @@ public class RabbitMQConfig {
                 .bind(profileCreateQueue())
                 .to(profileExchange())
                 .with(RK_PROFILE_CREATE);
+    }
+    
+    @Bean
+    public TopicExchange transactionExchange() {
+        return new TopicExchange(EXCHANGE_TRANSACTION, true, false);
+    }
+    
+    @Bean
+    public Queue walletCreditQueue() {
+        return new Queue(Q_WALLET_CREDIT, true);
+    }
+    
+    @Bean
+    public Binding walletCreditBinding() {
+        return BindingBuilder
+                .bind(walletCreditQueue())
+                .to(transactionExchange())
+                .with(RK_WALLET_CREDIT);
     }
 
     @Bean

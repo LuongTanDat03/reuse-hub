@@ -2,9 +2,46 @@ import axios from 'axios';
 import { API_BASE_URL } from '../types/constants';
 import { ApiResponse, Page } from '../types/api';
 
-// Types
-export interface ChatRoom {
+// Types matching backend DTOs
+export interface ConversationResponse {
   id: string;
+  participantIds: string[];
+  lastMessageId?: string;
+  lastMessageTimestamp?: string;
+  status: 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+  pinnedMessages?: string[];
+  mutedStatus?: Record<string, boolean>;
+  notificationSettings?: Record<string, boolean>;
+  otherParticipantId?: string;
+  otherParticipantName?: string;
+  otherParticipantAvatar?: string;
+  itemId?: string;
+  itemTitle?: string;
+  itemThumbnail?: string;
+}
+
+export interface MessageResponse {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  media?: string[];
+  status: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM';
+  reactions?: Record<string, string[]>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SendMessageRequest {
+  senderId: string;
+  recipientId: string;
+  content: string;
+}
+
+// Legacy types for backward compatibility
+export interface ChatRoom extends ConversationResponse {
   participant1Id: string;
   participant2Id: string;
   participant1Name: string;
@@ -17,22 +54,12 @@ export interface ChatRoom {
   createdAt: string;
 }
 
-export interface ChatMessage {
-  id: string;
+export interface ChatMessage extends MessageResponse {
   roomId: string;
-  senderId: string;
   senderName: string;
-  content: string;
   type: 'TEXT' | 'IMAGE' | 'FILE';
   fileUrl?: string;
   isRead: boolean;
-  createdAt: string;
-}
-
-export interface SendMessageRequest {
-  roomId: string;
-  content: string;
-  type?: 'TEXT' | 'IMAGE' | 'FILE';
 }
 
 const getAuthHeaders = (userId: string) => {
@@ -43,68 +70,90 @@ const getAuthHeaders = (userId: string) => {
   };
 };
 
-// Chat Room APIs
-export const getChatRooms = async (
+// Conversation APIs (matching backend)
+export const getMyConversations = async (
   userId: string,
   page: number = 0,
   size: number = 20
-): Promise<ApiResponse<Page<ChatRoom>>> => {
+): Promise<ApiResponse<Page<ConversationResponse>>> => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/chat/rooms?page=${page}&size=${size}`,
-      { headers: getAuthHeaders(userId) }
+      `${API_BASE_URL}/chats/conservations`,
+      { 
+        headers: getAuthHeaders(userId),
+        params: { page, size }
+      }
     );
     return response.data;
   } catch (error: any) {
-    console.error('Get chat rooms error:', error);
+    console.error('Get conversations error:', error);
     throw error;
   }
 };
 
-export const getChatRoom = async (
+export const getConversation = async (
   userId: string,
-  roomId: string
-): Promise<ApiResponse<ChatRoom>> => {
+  otherUserId: string,
+  itemId?: string
+): Promise<ApiResponse<ConversationResponse>> => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/chat/rooms/${roomId}`,
-      { headers: getAuthHeaders(userId) }
+      `${API_BASE_URL}/chats/conservations/with/${otherUserId}`,
+      { 
+        headers: getAuthHeaders(userId),
+        params: itemId ? { itemId } : undefined
+      }
     );
     return response.data;
   } catch (error: any) {
-    console.error('Get chat room error:', error);
+    console.error('Get conversation error:', error);
     throw error;
   }
 };
 
-export const createOrGetChatRoom = async (
+export const createOrGetConversation = async (
   userId: string,
-  otherUserId: string
-): Promise<ApiResponse<ChatRoom>> => {
+  otherUserId: string,
+  itemId?: string
+): Promise<ApiResponse<ConversationResponse>> => {
   try {
+    console.log('=== Creating Conversation ===');
+    console.log('userId (current user):', userId);
+    console.log('otherUserId (seller):', otherUserId);
+    console.log('itemId (product):', itemId);
+    
+    const headers = getAuthHeaders(userId);
+    console.log('Headers:', headers);
+    
     const response = await axios.post(
-      `${API_BASE_URL}/chat/rooms`,
-      { otherUserId },
-      { headers: getAuthHeaders(userId) }
+      `${API_BASE_URL}/chats/conservations/create/${otherUserId}`,
+      {},
+      { 
+        headers,
+        params: itemId ? { itemId } : undefined
+      }
     );
+    console.log('Conversation response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('Create chat room error:', error);
+    console.error('Create conversation error:', error);
     throw error;
   }
 };
 
-// Message APIs
 export const getMessages = async (
   userId: string,
-  roomId: string,
+  conversationId: string,
   page: number = 0,
   size: number = 50
-): Promise<ApiResponse<Page<ChatMessage>>> => {
+): Promise<ApiResponse<Page<MessageResponse>>> => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/chat/rooms/${roomId}/messages?page=${page}&size=${size}`,
-      { headers: getAuthHeaders(userId) }
+      `${API_BASE_URL}/chats/conservations/${conversationId}/messages`,
+      { 
+        headers: getAuthHeaders(userId),
+        params: { page, size }
+      }
     );
     return response.data;
   } catch (error: any) {
@@ -113,75 +162,140 @@ export const getMessages = async (
   }
 };
 
-export const sendMessage = async (
+// Legacy APIs for backward compatibility
+export const getChatRooms = async (
   userId: string,
-  request: SendMessageRequest,
-  file?: File
-): Promise<ApiResponse<ChatMessage>> => {
-  try {
-    if (file) {
-      const formData = new FormData();
-      formData.append('roomId', request.roomId);
-      formData.append('content', request.content);
-      formData.append('type', request.type || 'FILE');
-      formData.append('file', file);
-
-      const response = await axios.post(
-        `${API_BASE_URL}/chat/messages/upload`,
-        formData,
-        {
-          headers: {
-            ...getAuthHeaders(userId),
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      return response.data;
-    } else {
-      const response = await axios.post(
-        `${API_BASE_URL}/chat/messages`,
-        request,
-        { headers: getAuthHeaders(userId) }
-      );
-      return response.data;
-    }
-  } catch (error: any) {
-    console.error('Send message error:', error);
-    throw error;
+  page: number = 0,
+  size: number = 20
+): Promise<ApiResponse<Page<ChatRoom>>> => {
+  const response = await getMyConversations(userId, page, size);
+  // Convert ConversationResponse to ChatRoom format
+  if (response.data && 'content' in response.data) {
+    const conversations = response.data.content as ConversationResponse[];
+    const chatRooms: ChatRoom[] = conversations.map(conv => ({
+      ...conv,
+      participant1Id: conv.participantIds[0] || '',
+      participant2Id: conv.participantIds[1] || '',
+      participant1Name: conv.otherParticipantName || '',
+      participant2Name: conv.otherParticipantName || '',
+      participant1Avatar: conv.otherParticipantAvatar,
+      participant2Avatar: conv.otherParticipantAvatar,
+      lastMessage: '',
+      lastMessageTime: conv.lastMessageTimestamp,
+      unreadCount: 0,
+      createdAt: conv.lastMessageTimestamp || new Date().toISOString(),
+    }));
+    return {
+      ...response,
+      data: {
+        ...response.data,
+        content: chatRooms
+      }
+    };
   }
+  return response as any;
+};
+
+export const getChatRoom = async (
+  userId: string,
+  conversationId: string
+): Promise<ApiResponse<ChatRoom>> => {
+  // This would need to be implemented if backend supports getting single conversation by ID
+  // For now, we can get it from the list
+  const response = await getMyConversations(userId, 0, 100);
+  if (response.data && 'content' in response.data) {
+    const conversations = response.data.content as ConversationResponse[];
+    const conv = conversations.find(c => c.id === conversationId);
+    if (conv) {
+      const chatRoom: ChatRoom = {
+        ...conv,
+        participant1Id: conv.participantIds[0] || '',
+        participant2Id: conv.participantIds[1] || '',
+        participant1Name: conv.otherParticipantName || '',
+        participant2Name: conv.otherParticipantName || '',
+        participant1Avatar: conv.otherParticipantAvatar,
+        participant2Avatar: conv.otherParticipantAvatar,
+        lastMessage: '',
+        lastMessageTime: conv.lastMessageTimestamp,
+        unreadCount: 0,
+        createdAt: conv.lastMessageTimestamp || new Date().toISOString(),
+      };
+      return {
+        status: 200,
+        message: 'Success',
+        data: chatRoom,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+  throw new Error('Conversation not found');
+};
+
+export const createOrGetChatRoom = async (
+  userId: string,
+  otherUserId: string,
+  itemId?: string
+): Promise<ApiResponse<ChatRoom>> => {
+  const response = await createOrGetConversation(userId, otherUserId, itemId);
+  if (response.data) {
+    const conv = response.data;
+    const chatRoom: ChatRoom = {
+      ...conv,
+      participant1Id: conv.participantIds[0] || '',
+      participant2Id: conv.participantIds[1] || '',
+      participant1Name: conv.otherParticipantName || '',
+      participant2Name: conv.otherParticipantName || '',
+      participant1Avatar: conv.otherParticipantAvatar,
+      participant2Avatar: conv.otherParticipantAvatar,
+      lastMessage: '',
+      lastMessageTime: conv.lastMessageTimestamp,
+      unreadCount: 0,
+      createdAt: conv.lastMessageTimestamp || new Date().toISOString(),
+    };
+    return {
+      ...response,
+      data: chatRoom
+    };
+  }
+  return response as any;
+};
+
+export const sendMessage = async (
+  _userId: string,
+  _request: { roomId: string; content: string; type?: string },
+  _file?: File
+): Promise<ApiResponse<ChatMessage>> => {
+  // Note: Backend uses WebSocket for sending messages
+  // This is a placeholder for file uploads if needed
+  throw new Error('Use WebSocket to send messages. File upload not yet implemented.');
 };
 
 export const markMessagesAsRead = async (
-  userId: string,
-  roomId: string
+  _userId: string,
+  _conversationId: string
 ): Promise<ApiResponse<void>> => {
-  try {
-    const response = await axios.put(
-      `${API_BASE_URL}/chat/rooms/${roomId}/read`,
-      {},
-      { headers: getAuthHeaders(userId) }
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('Mark messages as read error:', error);
-    throw error;
-  }
+  // This would need to be implemented in backend if needed
+  console.warn('Mark as read not yet implemented in backend');
+  return {
+    status: 200,
+    message: 'Success',
+    data: undefined,
+    timestamp: new Date().toISOString()
+  };
 };
 
 export const deleteMessage = async (
-  userId: string,
-  messageId: string
+  _userId: string,
+  _messageId: string
 ): Promise<ApiResponse<void>> => {
-  try {
-    const response = await axios.delete(
-      `${API_BASE_URL}/chat/messages/${messageId}`,
-      { headers: getAuthHeaders(userId) }
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('Delete message error:', error);
-    throw error;
-  }
+  // This would need to be implemented in backend if needed
+  console.warn('Delete message not yet implemented in backend');
+  return {
+    status: 200,
+    message: 'Success',
+    data: undefined,
+    timestamp: new Date().toISOString()
+  };
 };
 
 // Utility functions

@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Header } from '../screens/Desktop/sections/Header/Header';
+import { ChatWidget } from './ChatWidget/ChatWidget';
 
 interface LayoutProps {
   children: ReactNode;
@@ -13,6 +14,7 @@ export const Layout = ({ children, showHeader = true }: LayoutProps): JSX.Elemen
       <main className="w-full">
         {children}
       </main>
+      <ChatWidget />
     </div>
   );
 };

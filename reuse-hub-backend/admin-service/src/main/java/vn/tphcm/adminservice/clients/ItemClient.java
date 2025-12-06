@@ -32,7 +32,8 @@ public interface ItemClient {
                                                         @RequestParam(defaultValue = "10") int pageSize,
                                                         @RequestParam(defaultValue = "createdAt") String sortBy,
                                                         @RequestParam(defaultValue = "desc") String sortDirection,
-                                                        @RequestParam(required = false) String filter);
+                                                        @RequestParam(required = false) String filter,
+                                                        @RequestParam(required = false) String categorySlug);
 
     @GetMapping("/statistics")
     ApiResponse<ItemStatisticsResponse> getItemStatistics();

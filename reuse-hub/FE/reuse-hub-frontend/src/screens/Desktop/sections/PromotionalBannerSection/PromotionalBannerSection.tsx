@@ -38,7 +38,7 @@ export const PromotionalBannerSection = (): JSX.Element => {
           {/* App Download Section */}
           <div className="flex flex-col gap-6">
             <h3 className="[font-family:'Reddit_Sans',Helvetica] font-bold text-white text-sm tracking-[0] leading-5">
-              Tải ứng dụng Chợ Tốt
+              Tải ứng dụng của chúng tôi
             </h3>
             <div className="flex gap-4 items-start">
               <div className="w-[87px] h-[87px] bg-[url(/picture---ch--t-t.png)] bg-cover bg-[50%_50%] flex-shrink-0" />
@@ -104,7 +104,7 @@ export const PromotionalBannerSection = (): JSX.Element => {
               </div>
               <div className="flex flex-col gap-4 mt-2">
                 <p className="[font-family:'Reddit_Sans',Helvetica] font-normal text-blue-200 text-sm tracking-[0] leading-5">
-                  Email: trogiup@chotot.vn
+                  Email: trogiup@reusehub.vn
                 </p>
                 <p className="[font-family:'Reddit_Sans',Helvetica] font-normal text-blue-200 text-sm tracking-[0] leading-5">
                   CSKH: 19003003(1.000đ/phút)
@@ -122,19 +122,19 @@ export const PromotionalBannerSection = (): JSX.Element => {
         </div>
         <div className="mt-8 border-t pt-4">
           <div className="[font-family:'Inter',Helvetica] text-xs text-center text-blue-200">
-            <strong>Công ty TNHH Shopee</strong>
+            <strong>Công ty TNHH </strong>
             <br />
             Địa chỉ: Tầng 4-5-6, Tòa nhà Capital Place, số 29 đường Liễu Giai, Phường Ngọc Khánh, Quận Ba Đình, Thành
             phố Hà Nội, Việt Nam.
             <br />
-            Chăm sóc khách hàng: Gọi tổng đài Shopee (miễn phí) hoặc Trò chuyện với Shopee ngay trên Trung tâm trợ
+            Chăm sóc khách hàng: Gọi tổng đài (miễn phí) hoặc Trò chuyện với Shopee ngay trên Trung tâm trợ
             giúp
             <br />
             <strong>Chịu Trách Nhiệm Quản Lý Nội Dung:</strong> Nguyễn Bui Anh Tuân
             <br />
             <strong>Mã số doanh nghiệp:</strong> 0106773786 do Sở Kế hoạch và Đầu tư TP Hà Nội cấp lần đầu ngày
             10/02/2015
-            <br />© 2015 - Bản quyền thuộc về Công ty TNHH Shopee
+            <br />© 2015 - Bản quyền thuộc về Công ty TNHH
           </div>
         </div>
       </div>

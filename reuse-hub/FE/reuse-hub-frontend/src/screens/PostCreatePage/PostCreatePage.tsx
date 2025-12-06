@@ -69,5 +69,3 @@ const PostCreatePage: React.FC = () => {
 };
 
 export default PostCreatePage;
-
-

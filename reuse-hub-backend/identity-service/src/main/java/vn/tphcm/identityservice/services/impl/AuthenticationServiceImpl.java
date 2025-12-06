@@ -205,7 +205,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             redisTemplate.opsForValue().set(redisKey, verifyCode, TIMEOUT_REDIS, MINUTES);
             log.info("Stored verifyCode in Redis with key: {}, code: {}", redisKey, verifyCode);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("Failed to store verifyCode in Redis for userId={}: {}", user.getId(), e.getMessage());
         }
 
@@ -240,7 +240,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public ApiResponse<Void> logout(LogoutRequest request) {
         log.info("Processing logout request....");
-        if (!StringUtils.hasText(request.getToken())){
+        if (!StringUtils.hasText(request.getToken())) {
             throw new InvalidDataException("Invalid token");
         }
 
@@ -266,10 +266,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         return ApiResponse.<Void>builder()
-                    .status(HttpStatus.OK.value())
-                    .message("Logout successful")
-                    .data(null)
-                    .timestamp(OffsetDateTime.now()).build();
+                .status(HttpStatus.OK.value())
+                .message("Logout successful")
+                .data(null)
+                .timestamp(OffsetDateTime.now()).build();
     }
 
     @Override
@@ -328,14 +328,32 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             String username = jwtService.extractUsername(request.getToken(), TokenType.ACCESS_TOKEN);
 
-            String userId = userRepository.findByUsernameOrEmail(username, username).get().getId();
+            Optional<User> user = userRepository.findByUsernameOrEmail(username, username);
+
+            if (user.isEmpty()) {
+                return ApiResponse.<IntrospectResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Username or email invalid")
+                        .data(IntrospectResponse.builder()
+                                .valid(false)
+                                .build())
+                        .timestamp(OffsetDateTime.now())
+                        .build();
+            }
+
+            // Extract roles from user
+            List<String> roles = user.get().getRoles().stream()
+                    .map(role -> role.getRole().getName())
+                    .toList();
 
             return ApiResponse.<IntrospectResponse>builder()
                     .status(HttpStatus.OK.value())
                     .message("Token is valid")
                     .data(IntrospectResponse.builder()
                             .valid(true)
-                            .userId(userId)
+                            .userId(user.get().getId())
+                            .username(user.get().getUsername())
+                            .roles(roles)
                             .build())
                     .timestamp(OffsetDateTime.now()).build();
         } catch (Exception e) {

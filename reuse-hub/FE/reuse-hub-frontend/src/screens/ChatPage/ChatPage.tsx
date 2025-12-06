@@ -11,12 +11,17 @@ export default function ChatPage() {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   
+  // Get itemId from query params
+  const searchParams = new URLSearchParams(window.location.search);
+  const itemId = searchParams.get('itemId') || undefined;
+  
   const {
     rooms,
     currentRoom,
     messages,
     loading,
     error,
+    isConnected,
     sendMessage,
     createOrGetRoom,
     messagesEndRef,
@@ -24,14 +29,16 @@ export default function ChatPage() {
 
   // Create or get room when targetUserId changes
   useEffect(() => {
-    if (targetUserId && user?.id) {
-      createOrGetRoom(targetUserId).then((room) => {
+    if (targetUserId && user?.id && !roomId) {
+      console.log('ChatPage creating room with itemId:', itemId);
+      createOrGetRoom(targetUserId, itemId).then((room) => {
         if (room) {
           setRoomId(room.id);
         }
       });
     }
-  }, [targetUserId, user?.id, createOrGetRoom]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetUserId, user?.id, itemId]);
 
   const handleSend = async () => {
     if (!input.trim() || !roomId) return;
@@ -44,15 +51,19 @@ export default function ChatPage() {
     }
   };
 
-  const handleConversationClick = (otherUserId: string) => {
-    navigate(`/chat/${otherUserId}`);
+  const handleConversationClick = (otherUserId: string, itemId?: string) => {
+    const url = itemId ? `/chat/${otherUserId}?itemId=${itemId}` : `/chat/${otherUserId}`;
+    navigate(url);
   };
 
   const getOtherParticipant = (room: typeof currentRoom) => {
     if (!room || !user?.id) return null;
-    return room.participant1Id === user.id 
-      ? { id: room.participant2Id, name: room.participant2Name, avatar: room.participant2Avatar }
-      : { id: room.participant1Id, name: room.participant1Name, avatar: room.participant1Avatar };
+    // Use otherParticipantId directly from the response
+    return {
+      id: room.otherParticipantId || room.participantIds.find(id => id !== user.id) || '',
+      name: room.otherParticipantName || 'Unknown',
+      avatar: room.otherParticipantAvatar
+    };
   };
 
   if (!user) {
@@ -87,21 +98,46 @@ export default function ChatPage() {
             ) : (
               rooms.map((room) => {
                 const other = getOtherParticipant(room);
+                console.log('Room in sidebar:', { 
+                  roomId: room.id, 
+                  otherParticipantId: room.otherParticipantId,
+                  participantIds: room.participantIds,
+                  otherId: other?.id,
+                  itemId: room.itemId
+                });
                 return (
                   <button
                     key={room.id}
-                    onClick={() => handleConversationClick(other?.id || '')}
+                    onClick={() => handleConversationClick(other?.id || '', room.itemId)}
                     className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 border-b ${
                       room.id === roomId ? 'bg-blue-50' : ''
                     }`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-gray-600">
-                      {(other?.name || 'U').charAt(0).toUpperCase()}
-                    </div>
+                    {/* Avatar or Item Thumbnail */}
+                    {room.itemThumbnail ? (
+                      <div className="relative">
+                        <img 
+                          src={room.itemThumbnail} 
+                          alt={room.itemTitle}
+                          className="w-10 h-10 rounded object-cover"
+                        />
+                      </div>
+                    ) : other?.avatar ? (
+                      <img 
+                        src={other.avatar} 
+                        alt={other.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-gray-600">
+                        {(other?.name || 'U').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{other?.name || 'Unknown'}</div>
                       <div className="text-xs text-gray-500 truncate">
-                        {room.lastMessage || 'Bắt đầu trò chuyện'}
+                        {room.itemTitle || room.lastMessage || 'Bắt đầu trò chuyện'}
                       </div>
                     </div>
                     {room.unreadCount > 0 && (
@@ -118,11 +154,53 @@ export default function ChatPage() {
 
         {/* Chat content */}
         <section className="col-span-9 flex flex-col">
-          <div className="px-4 py-3 border-b bg-white flex items-center justify-between">
-            <div className="font-medium truncate">
-              Đang chat với: {otherParticipant?.name || 'Loading...'}
+          {/* Header with seller info */}
+          <div className="px-4 py-3 border-b bg-white">
+            <div className="flex items-center gap-3">
+              {otherParticipant?.avatar ? (
+                <img 
+                  src={otherParticipant.avatar} 
+                  alt={otherParticipant.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                  {(otherParticipant?.name || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="font-medium">{otherParticipant?.name || 'Loading...'}</div>
+                <div className="text-xs text-gray-500">
+                  {isConnected ? 'Đang hoạt động' : 'Đang kết nối...'}
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Item info card (if available) - Sticky */}
+          {currentRoom?.itemId && (
+            <div className="sticky top-0 z-10 px-4 py-3 bg-blue-50 border-b shadow-sm">
+              <div className="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                {currentRoom.itemThumbnail && (
+                  <img 
+                    src={currentRoom.itemThumbnail} 
+                    alt={currentRoom.itemTitle}
+                    className="w-16 h-16 rounded object-cover"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">{currentRoom.itemTitle || 'Sản phẩm'}</div>
+                  <div className="text-xs text-gray-500">Sản phẩm đang trao đổi</div>
+                </div>
+                <button
+                  onClick={() => navigate(`/product/${currentRoom.itemId}`)}
+                  className="text-blue-600 text-xs hover:underline whitespace-nowrap"
+                >
+                  Xem chi tiết
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50">
             {loading ? (
@@ -176,9 +254,9 @@ export default function ChatPage() {
             />
             <Button 
               onClick={handleSend}
-              disabled={!input.trim() || !roomId || loading}
+              disabled={!input.trim() || !roomId || loading || !isConnected}
             >
-              Gửi
+              {isConnected ? 'Gửi' : 'Đang kết nối...'}
             </Button>
           </div>
         </section>

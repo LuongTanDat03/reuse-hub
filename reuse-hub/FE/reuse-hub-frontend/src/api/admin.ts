@@ -34,6 +34,7 @@ export interface InfoUser {
   lastName: string;
   avatarUrl: string;
   address: any[];
+  wallet?: number;
 }
 
 export interface ItemResponse {
@@ -121,12 +122,13 @@ export const getAllItems = async (
   pageSize: number = 10,
   sortBy: string = 'createdAt',
   sortDirection: string = 'desc',
-  filter?: string
+  filter?: string,
+  categorySlug?: string
 ) => {
   return axios.get<{ status: number; message: string; data: DashboardItemResponse }>(
     `${ADMIN_API_BASE_URL}/items`,
     {
-      params: { pageNo, pageSize, sortBy, sortDirection, filter },
+      params: { pageNo, pageSize, sortBy, sortDirection, filter, categorySlug },
       headers: getAuthHeaders(),
     }
   );

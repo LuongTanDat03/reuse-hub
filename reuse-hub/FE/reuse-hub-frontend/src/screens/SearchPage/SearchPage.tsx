@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import * as itemsAPI from '../../api/items';
+import * as itemsAPI from '../../api/item';
 import ItemCard from '../../components/ItemCard';
 
 const SearchPage: React.FC = () => {

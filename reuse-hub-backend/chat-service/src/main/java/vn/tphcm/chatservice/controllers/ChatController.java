@@ -33,7 +33,7 @@ public class ChatController {
     private final SimpMessagingTemplate template;
 
     @MessageMapping("/send-message")
-    @SendToUser("/queue/errors")
+    @SendToUser("/queue/responses")
     public Map<String, Object> sendMessage(@Payload SendMessageRequest request){
         log.info("Received message send request: {}", request);
 
@@ -53,10 +53,10 @@ public class ChatController {
             );
             log.info("Message sent to sender topic {}: {}", request.getSenderId(), messageData);
 
-            return Map.of("status", "Message sent successfully");
+            return Map.of("status", "success", "message", "Message sent successfully");
         } catch (Exception ex) {
             log.error("Error while sending message: {}", ex.getMessage());
-            return Map.of("error", ex.getMessage());
+            return Map.of("status", "error", "message", ex.getMessage());
         }
     }
 }

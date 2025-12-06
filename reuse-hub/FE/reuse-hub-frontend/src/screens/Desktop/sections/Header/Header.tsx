@@ -1,4 +1,4 @@
-import { User, LogOut, PlusCircle, MessageCircle, ShoppingBag, Package, Map } from "lucide-react";
+import { User, LogOut, PlusCircle, MessageCircle, ShoppingBag, Package, Map, Wallet } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../contexts/AuthContext";
@@ -7,8 +7,15 @@ import { getProfile } from "../../../../api/profile";
 
 export const Header = (): JSX.Element => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, walletBalance } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  };
 
   // Load avatar from localStorage immediately for snappy UI
   useEffect(() => {
@@ -81,7 +88,7 @@ export const Header = (): JSX.Element => {
                 <Button
                   onClick={() => navigate('/transactions')}
                   className="h-11 px-4 bg-white/90 hover:bg-white text-gray-800 border-2 border-white rounded-xl shadow-md hover:shadow-lg transition-all font-semibold"
-                  title="Giao dịch"
+                  title="Quản lý giao dịch"
                 >
                   <ShoppingBag className="w-5 h-5 mr-2" />
                   <span>Giao dịch</span>
@@ -106,14 +113,16 @@ export const Header = (): JSX.Element => {
                   Đăng tin
                 </Button>
 
-                {/* Chat Button */}
-                <Button
-                  onClick={() => navigate('/chat')}
-                  className="w-11 h-11 bg-white/90 hover:bg-white text-gray-800 border-2 border-white rounded-xl shadow-md hover:shadow-lg transition-all p-0"
-                  title="Tin nhắn"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                </Button>
+                {/* Wallet Balance */}
+                <div className="flex items-center gap-2 bg-gradient-to-r from-green-400 to-emerald-500 px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition-all">
+                  <Wallet className="w-5 h-5 text-white" />
+                  <div className="flex flex-col">
+                    <span className="text-xs text-white/80">Ví của tôi</span>
+                    <span className="text-sm font-bold text-white">
+                      {formatCurrency(walletBalance)}
+                    </span>
+                  </div>
+                </div>
 
                 {/* User Menu - Combined Button */}
                 <div className="flex items-center gap-3 ml-2 pl-3 border-l-2 border-white bg-white/90 px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition-all">

@@ -44,4 +44,20 @@ public class ProfileController {
 
         return profileService.updateProfile(request, file);
     }
+
+    @GetMapping("/wallet/{userId}")
+    @Operation(summary = "Get wallet balance", description = "Get wallet balance for user")
+    public ApiResponse<Long> getWalletBalance(@PathVariable String userId) {
+        log.info("Get wallet balance for userId: {}", userId);
+
+        return profileService.getWalletBalance(userId);
+    }
+
+    @GetMapping("/wallet/total")
+    @Operation(summary = "Get total wallet balance of all users", description = "Get total wallet balance of all users (Admin only)")
+    public ApiResponse<Long> getTotalWalletBalance() {
+        log.info("Get total wallet balance for all users");
+
+        return profileService.getTotalWalletBalance();
+    }
 }

@@ -123,7 +123,7 @@ export const ProductDetailPage = (): JSX.Element => {
     }
   };
 
-  const handleChat = () => {
+  const handleChat = async () => {
     if (!user || !item) return;
     
     if (item.userId === user.id) {
@@ -131,7 +131,26 @@ export const ProductDetailPage = (): JSX.Element => {
       return;
     }
     
-    navigate(`/chat/${item.userId}`);
+    try {
+      console.log('Creating chat - Current user:', user);
+      console.log('Creating chat - user.id:', user.id);
+      console.log('Creating chat - item.userId (seller):', item.userId);
+      console.log('Creating chat - productId (itemId):', productId);
+      
+      // Import chat API
+      const { createOrGetChatRoom } = await import('../../api/chat');
+      
+      // Create or get chat room with seller, include productId as itemId
+      const response = await createOrGetChatRoom(user.id, item.userId, productId);
+      
+      if (response.status === 200 && response.data) {
+        // Navigate to chat with seller userId and itemId as query param
+        navigate(`/chat/${item.userId}?itemId=${productId}`);
+      }
+    } catch (error) {
+      console.error('Failed to create chat room:', error);
+      toast.error('Không thể tạo chat');
+    }
   };
 
   const handleShare = () => {

@@ -82,13 +82,26 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                 .flatMap(apiResponse -> {
                     if (apiResponse != null && apiResponse.getData() != null && apiResponse.getData().isValid()) {
                         log.info("Token is valid. Proceeding to the next filter...");
-                        ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
-                                .header("X-User-Id", apiResponse.getData().getUserId())
-                                .build();
-                        ServerWebExchange mutatedExchange = exchange.mutate()
-                                .request(mutatedRequest)
-                                .build();
-                        return chain.filter(mutatedExchange);
+                        
+                        IntrospectResponse data = apiResponse.getData();
+                        
+                        try {
+                            // Serialize roles to JSON
+                            String rolesJson = objectMapper.writeValueAsString(data.getRoles());
+                            
+                            ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                                    .header("X-User-Id", data.getUserId())
+                                    .header("X-Username", data.getUsername())
+                                    .header("X-Roles", rolesJson)
+                                    .build();
+                            ServerWebExchange mutatedExchange = exchange.mutate()
+                                    .request(mutatedRequest)
+                                    .build();
+                            return chain.filter(mutatedExchange);
+                        } catch (JsonProcessingException e) {
+                            log.error("Failed to serialize roles", e);
+                            return unauthenticated(exchange.getResponse());
+                        }
                     } else {
                         log.info("Token is invalid. Returning unauthenticated response...");
                         return unauthenticated(exchange.getResponse());

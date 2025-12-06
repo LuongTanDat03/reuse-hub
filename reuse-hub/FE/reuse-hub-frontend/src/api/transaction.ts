@@ -90,6 +90,19 @@ export const getItemTransactions = async (
   return response.data;
 };
 
+export const getTransaction = async (
+  userId: string,
+  transactionId: string
+): Promise<ApiResponse<TransactionResponse>> => {
+  const response = await axios.get<ApiResponse<TransactionResponse>>(
+    `${TRANSACTION_API_BASE_URL}/${transactionId}`,
+    {
+      headers: getAuthHeaders(userId),
+    }
+  );
+  return response.data;
+};
+
 export const createTransaction = async (
   buyerUserId: string,
   request: CreateTransactionRequest
@@ -188,3 +201,50 @@ export const updateTransactionStatus = async (
 };
 
 
+
+export const acceptTransaction = async (
+  sellerUserId: string,
+  transactionId: string
+): Promise<ApiResponse<TransactionResponse>> => {
+  const response = await axios.post<ApiResponse<TransactionResponse>>(
+    `${TRANSACTION_API_BASE_URL}/${transactionId}/accept`,
+    {},
+    {
+      headers: getAuthHeaders(sellerUserId),
+    }
+  );
+  return response.data;
+};
+
+export const rejectTransaction = async (
+  sellerUserId: string,
+  transactionId: string,
+  reason: string
+): Promise<ApiResponse<TransactionResponse>> => {
+  const response = await axios.post<ApiResponse<TransactionResponse>>(
+    `${TRANSACTION_API_BASE_URL}/${transactionId}/reject`,
+    reason,
+    {
+      headers: {
+        ...getAuthHeaders(sellerUserId),
+        'Content-Type': 'text/plain',
+      },
+    }
+  );
+  return response.data;
+};
+
+export const rateTransaction = async (
+  buyerUserId: string,
+  transactionId: string,
+  request: SubmitRatingRequest
+): Promise<ApiResponse<TransactionResponse>> => {
+  const response = await axios.post<ApiResponse<TransactionResponse>>(
+    `${TRANSACTION_API_BASE_URL}/${transactionId}/feedback`,
+    request,
+    {
+      headers: getAuthHeaders(buyerUserId),
+    }
+  );
+  return response.data;
+};

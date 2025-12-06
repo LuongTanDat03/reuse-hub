@@ -531,10 +531,11 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ApiResponse<PageResponse<ItemResponse>> searchItemsNearby(double latitude, double longitude, double radius, int pageNo, int pageSize, String sortBy, String sortDirection) {
+    public ApiResponse<PageResponse<ItemResponse>> searchItemsNearby(double latitude, double longitude, double radius, int pageNo, int pageSize) {
         log.info("Searching items nearby latitude: {}, longitude: {}, radius: {}", latitude, longitude, radius);
 
-        Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
+        // Don't add sort to Pageable because native query already has ORDER BY ST_Distance
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
 
         Page<Item> items = itemRepository.searchItemNearby(latitude, longitude, radius, pageable);
 
@@ -574,7 +575,7 @@ public class ItemServiceImpl implements ItemService {
     public ApiResponse<PageResponse<ItemResponse>> getItems(int pageNo, int pageSize, String sortBy, String sortDirection, String filter) {
         Pageable pageable = createPageable(pageNo, pageSize, sortBy, sortDirection);
 
-        Page<Item> items = itemRepository.findAllPageByCategory(filter, pageable);
+        Page<Item> items = itemRepository.findByCategorySlug(filter, pageable);
 
         Page<ItemResponse> responsePage = items.map(itemMapper::toResponse);
 

@@ -42,4 +42,11 @@ public class Conversation extends AbstractEntity<String> implements Serializable
     private Map<String, Boolean> mutedStatus;
 
     private Map<String, Boolean> notificationSettings;
+
+    // Item information (for product-related conversations)
+    private String itemId;
+    
+    private String itemTitle;
+    
+    private String itemThumbnail;
 }

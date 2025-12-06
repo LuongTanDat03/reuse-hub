@@ -32,5 +32,7 @@ public class ProfileResponse {
 
     private String avatarUrl;
 
+    private Long wallet;
+
     private List<AddressResponse> address;
 }

@@ -13,12 +13,13 @@ package vn.tphcm.itemservice.repositories;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import vn.tphcm.itemservice.dtos.response.CategoryResponse;
 import vn.tphcm.itemservice.models.Category;
 
 import java.util.List;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, String> {
-    @Query("SELECT c FROM Category c")
-    List<Category> findAllCategories();
+    @Query("SELECT new vn.tphcm.itemservice.dtos.response.CategoryResponse(c.id, c.name, c.slug) FROM Category c")
+    List<CategoryResponse> findAllCategoriesSimple();
 }

@@ -22,6 +22,7 @@ import vn.tphcm.itemservice.dtos.PageResponse;
 import vn.tphcm.itemservice.dtos.request.ItemCreationRequest;
 import vn.tphcm.itemservice.dtos.request.ItemSearchRequest;
 import vn.tphcm.itemservice.dtos.request.ItemUpdateRequest;
+import vn.tphcm.itemservice.dtos.response.CategoryResponse;
 import vn.tphcm.itemservice.dtos.response.CommentResponse;
 import vn.tphcm.itemservice.dtos.response.ItemResponse;
 import vn.tphcm.itemservice.models.Category;
@@ -171,28 +172,26 @@ public class ItemController {
                                                                   @RequestParam double longitude,
                                                                   @RequestParam(defaultValue = "5000") double radius,
                                                                   @RequestParam(defaultValue = "0") int pageNo,
-                                                                  @RequestParam(defaultValue = "10") int pageSize,
-                                                                  @RequestParam(defaultValue = "createdAt") String sortBy,
-                                                                  @RequestParam(defaultValue = "desc") String sortDirection) {
+                                                                  @RequestParam(defaultValue = "10") int pageSize) {
         log.info("Received request to get nearby items at lat: {}, long: {}, radius: {}", latitude, longitude, radius);
 
-        return itemService.searchItemsNearby(latitude, longitude, radius, pageNo, pageSize, sortBy, sortDirection);
+        return itemService.searchItemsNearby(latitude, longitude, radius, pageNo, pageSize);
     }
 
     @GetMapping("/public/categories")
     @Operation(summary = "Get all categories", description = "Returns list of all categories for dropdowns")
-    public ApiResponse<List<Category>> getAllCategories() {
+    public ApiResponse<List<CategoryResponse>> getAllCategories() {
         try {
-            List<Category> categories = categoryRepository.findAllCategories();
+            List<CategoryResponse> categories = categoryRepository.findAllCategoriesSimple();
 
-            return ApiResponse.<List<Category>>builder()
+            return ApiResponse.<List<CategoryResponse>>builder()
                     .status(HttpStatus.OK.value())
                     .message("Fetched categories successfully")
                     .data(categories)
                     .build();
         } catch (Exception e) {
             log.error("Error fetching categories", e);
-            return ApiResponse.<List<Category>>builder()
+            return ApiResponse.<List<CategoryResponse>>builder()
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .message("Error fetching categories: " + e.getMessage())
                     .data(null)

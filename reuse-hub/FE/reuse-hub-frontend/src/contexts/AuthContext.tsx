@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiService } from '../services/api';
 import { User, SignInRequest, UserCreationRequest, UserCreationResponse, VerifyEmailResponse } from '../types/api';
 import { USER_STATUS } from '../types/constants';
+import { getWalletBalance } from '../api/profile';
 
 interface AuthContextType {
   user: User | null;
@@ -9,6 +10,8 @@ interface AuthContextType {
   refreshToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  walletBalance: number;
+  refreshWallet: () => Promise<void>;
   login: (credentials: SignInRequest) => Promise<void>;
   register: (userData: UserCreationRequest) => Promise<UserCreationResponse>;
   verifyEmail: (userId: string, verificationCode: string) => Promise<VerifyEmailResponse>;
@@ -72,11 +75,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [refreshToken, setRefreshToken] = useState<string | null>(() => initializeState().refreshToken);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
 
   console.log('AuthContext initialized - accessToken:', !!accessToken, 'user:', user);
 
   // Make authentication check more lenient - if we have a token and user, allow access
   const isAuthenticated = !!accessToken && !!user; // Simplified - just check if we have token and user
+
+  // Fetch wallet balance when user logs in
+  const refreshWallet = async () => {
+    if (user?.id) {
+      try {
+        const response = await getWalletBalance(user.id);
+        if (response.status === 200 && response.data !== undefined) {
+          setWalletBalance(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch wallet balance:', err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      refreshWallet();
+    }
+  }, [isAuthenticated, user?.id]);
 
   const login = async (credentials: SignInRequest) => {
     setIsLoading(true);
@@ -219,6 +243,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       refreshToken,
       isLoading,
       isAuthenticated,
+      walletBalance,
+      refreshWallet,
       login,
       register,
       verifyEmail,

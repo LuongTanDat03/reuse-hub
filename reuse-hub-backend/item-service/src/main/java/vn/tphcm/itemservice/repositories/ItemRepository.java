@@ -60,9 +60,7 @@ public interface ItemRepository extends JpaRepository<Item, String> {
     Page<Item> findByTagsInAndStatusAvailable(@Param("tags") List<String> tags,
                                               Pageable pageable);
 
-    @Query("SELECT i FROM Item i " +
-            "WHERE i.category.slug = :categorySlug" )
-    Page<Item> findAllPageByCategory(@Param("categorySlug") String categorySlug, Pageable pageable);
+    Page<Item> findByCategorySlug(String categorySlug, Pageable pageable);
 
      @Query("SELECT i.status, COUNT(i) FROM Item i GROUP BY i.status")
     List<Object[]> countItemsByStatus();

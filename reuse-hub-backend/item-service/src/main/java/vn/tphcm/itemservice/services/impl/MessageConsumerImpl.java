@@ -10,8 +10,10 @@ package vn.tphcm.itemservice.services.impl;
  * @date: 11/3/2025
  */
 
+import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,15 +43,16 @@ public class MessageConsumerImpl implements MessageConsumer {
     @Override
     @RabbitListener(queues = "${rabbitmq.queue.item-process}")
     @Transactional
-    public void handleTransactionEvent(TransactionEventMessage event) {
-        if (event == null || event.getItemId() == null) {
-            log.warn("Received null transaction event or itemId");
-            return;
-        }
-
-        log.info("Processing transaction event: {}", event);
-
+    public void handleTransactionEvent(TransactionEventMessage event, Channel channel, Message message) throws Exception {
         try {
+            if (event == null || event.getItemId() == null) {
+                log.warn("Received null transaction event or itemId");
+                channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+                return;
+            }
+
+            log.info("Processing transaction event: {}", event);
+
             Item item = itemRepository.findById(event.getItemId())
                     .orElseThrow(() -> new InvalidDataException("Item not found with ID: " + event.getItemId()));
 
@@ -59,9 +62,14 @@ public class MessageConsumerImpl implements MessageConsumer {
                 case COMPLETED -> handleTransactionCompleted(event, item);
                 default -> log.warn("Unhandled transaction event type: {}", event.getEventType());
             }
+
+            // Acknowledge success
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+            log.debug("Transaction event acknowledged for transaction {}", event.getTransactionId());
+
         } catch (ResourceNotFoundException e) {
             log.error("Error processing transaction event: {}", e.getMessage());
-            if (event.getEventType() == EventType.CREATED) {
+            if (event != null && event.getEventType() == EventType.CREATED) {
                 ItemReservationEvent itemReservationEvent = ItemReservationEvent.builder()
                         .eventId(UUID.randomUUID().toString())
                         .transactionId(event.getTransactionId())
@@ -69,13 +77,14 @@ public class MessageConsumerImpl implements MessageConsumer {
                         .success(false)
                         .message("Item not found")
                         .build();
-
                 messageProducer.publishItemReservationResult(itemReservationEvent);
             }
+            // Send to DLQ
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         } catch (Exception e) {
             log.error("SAGA Failed: Unexpected error processing transaction event for {}. Error: {}",
-                    event.getTransactionId(), e.getMessage(), e);
-            if (event.getEventType() == EventType.CREATED) {
+                    event != null ? event.getTransactionId() : "NULL", e.getMessage(), e);
+            if (event != null && event.getEventType() == EventType.CREATED) {
                 ItemReservationEvent itemReservationEvent = ItemReservationEvent.builder()
                         .eventId(UUID.randomUUID().toString())
                         .transactionId(event.getTransactionId())
@@ -83,9 +92,10 @@ public class MessageConsumerImpl implements MessageConsumer {
                         .success(false)
                         .message("Item is not available")
                         .build();
-
                 messageProducer.publishItemReservationResult(itemReservationEvent);
             }
+            // Send to DLQ
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         }
     }
 
@@ -142,6 +152,7 @@ public class MessageConsumerImpl implements MessageConsumer {
                     item.getId(), event.getTransactionId());
 
             cacheService.evictCachedItem(item.getId());
+            cacheService.evictAllItems();
         } else {
             log.warn("SAGA Ignored: Transaction {} completed, but item {} was not in RESERVED status (current: {}).",
                     event.getTransactionId(), item.getId(), item.getStatus());
@@ -151,38 +162,45 @@ public class MessageConsumerImpl implements MessageConsumer {
     @Override
     @RabbitListener(queues = "${rabbitmq.queue.feedback-process}")
     @Transactional
-    public void handleFeedbackSubmitted(FeedbackEvent event) {
-        if (event == null || event.getItemId() == null) {
-            log.error("Received invalid FeedbackEvent (null or no itemId)");
-            return;
-        }
-
-        log.info("SAGA Event Received: FEEDBACK_SUBMITTED for itemId: {}",
-                event.getItemId());
-
+    public void handleFeedbackSubmitted(FeedbackEvent event, Channel channel, Message message) throws Exception {
         try {
+            if (event == null || event.getItemId() == null) {
+                log.error("Received invalid FeedbackEvent (null or no itemId)");
+                channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+                return;
+            }
+
+            log.info("SAGA Event Received: FEEDBACK_SUBMITTED for itemId: {}", event.getItemId());
+
             itemService.processNewFeedback(event);
             log.info("SAGA Processed: Feedback for item {} successfully stored.", event.getItemId());
 
+            // Acknowledge success
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+            log.debug("Feedback event acknowledged for item {}", event.getItemId());
+
         } catch (Exception e) {
             log.error("SAGA Failed: Could not process feedback for item {}. Reason: {}",
-                    event.getItemId(), e.getMessage(), e);
+                    event != null ? event.getItemId() : "NULL", e.getMessage(), e);
+            // Send to DLQ
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         }
     }
 
     @Override
     @RabbitListener(queues = "${rabbitmq.queue.payment.item-boost}")
     @Transactional
-    public void handlePaymentEvent(PaymentEvent event) {
-        if (event == null || event.getLinkedItemId() == null) {
-            log.warn("Received null payment event or linkedItemId");
-            return;
-        }
-
-        log.info("SAGA Event Received: Payment event for itemId: {}, transactionId: {}, success: {}",
-                event.getLinkedItemId(), event.getLinkedTransactionId(), event.isSuccess());
-
+    public void handlePaymentEvent(PaymentEvent event, Channel channel, Message message) throws Exception {
         try {
+            if (event == null || event.getLinkedItemId() == null) {
+                log.warn("Received null payment event or linkedItemId");
+                channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+                return;
+            }
+
+            log.info("SAGA Event Received: Payment event for itemId: {}, transactionId: {}, success: {}",
+                    event.getLinkedItemId(), event.getLinkedTransactionId(), event.isSuccess());
+
             Item item = itemRepository.findById(event.getLinkedItemId())
                     .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID: " + event.getLinkedItemId()));
 
@@ -207,23 +225,40 @@ public class MessageConsumerImpl implements MessageConsumer {
                             item.getId(), item.getStatus());
                 }
             }
+
+            // Acknowledge success
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+            log.debug("Payment event acknowledged for item {}", event.getLinkedItemId());
+
         } catch (ResourceNotFoundException e) {
             log.error("SAGA Failed: Item not found for payment event: {}", e.getMessage());
+            // Send to DLQ
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         } catch (Exception e) {
             log.error("SAGA Failed: Unexpected error processing payment event for item {}. Error: {}",
-                    event.getLinkedItemId(), e.getMessage(), e);
+                    event != null ? event.getLinkedItemId() : "NULL", e.getMessage(), e);
+            // Send to DLQ
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         }
     }
 
     @Override
     @RabbitListener(queues = "q.item.update-tags")
     @Transactional
-    public void handleAiTagsGenerated(AiTagsGeneratedEvent event) {
-        log.info("Received AI_TAGS_GENERATED for item: {}", event.getItemId());
+    public void handleAiTagsGenerated(AiTagsGeneratedEvent event, Channel channel, Message message) throws Exception {
         try {
+            log.info("Received AI_TAGS_GENERATED for item: {}", event.getItemId());
+            
             itemService.updateItemTagsFromAi(event.getItemId(), event.getTags());
+            
+            // Acknowledge success
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+            log.debug("AI tags event acknowledged for item {}", event.getItemId());
+            
         } catch (Exception e) {
-            log.error("Failed to update tags from AI: {}", e.getMessage());
+            log.error("Failed to update tags from AI: {}", e.getMessage(), e);
+            // Send to DLQ
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         }
     }
 

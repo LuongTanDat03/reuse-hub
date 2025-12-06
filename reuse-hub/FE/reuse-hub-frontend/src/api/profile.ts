@@ -121,3 +121,11 @@ export const isFollowing = async (currentUserId: string, targetUserId: string): 
   );
   return response.data;
 };
+
+export const getWalletBalance = async (userId: string): Promise<ApiResponse<number>> => {
+  const response = await axios.get<ApiResponse<number>>(
+    `${PROFILE_API_BASE_URL}/wallet/${userId}`,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};

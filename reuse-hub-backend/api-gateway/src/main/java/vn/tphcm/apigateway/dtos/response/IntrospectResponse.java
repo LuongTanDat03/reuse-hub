@@ -12,6 +12,8 @@ package vn.tphcm.apigateway.dtos.response;
 
 import lombok.*;
 
+import java.util.List;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -20,4 +22,6 @@ import lombok.*;
 public class IntrospectResponse {
     private boolean valid;
     private String userId;
+    private String username;
+    private List<String> roles;
 }

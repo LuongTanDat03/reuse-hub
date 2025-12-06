@@ -40,10 +40,10 @@ public class ItemFeignController {
                                                                @RequestParam(defaultValue = "10") int pageSize,
                                                                @RequestParam(defaultValue = "createdAt") String sortBy,
                                                                @RequestParam(defaultValue = "desc") String sortDirection,
-                                                               @RequestParam(required = false) String filter) {
+                                                               @RequestParam(required = false) String categorySlug) {
         log.info("Feign client request to get all items");
 
-        return itemService.getItems(pageNo, pageSize, sortBy, sortDirection, filter);
+        return itemService.getItems(pageNo, pageSize, sortBy, sortDirection, categorySlug);
     }
 
     @GetMapping("/statistics")

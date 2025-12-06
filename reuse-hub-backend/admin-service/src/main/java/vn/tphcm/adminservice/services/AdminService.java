@@ -20,7 +20,7 @@ import java.util.Map;
 public interface AdminService {
     ApiResponse<DashboardUserResponse> getAllUsers(int pageNo, int pageSize, String sortBy, String sortDirection);
 
-    ApiResponse<DashboardItemResponse> getAllItems(int pageNo, int pageSize, String sortBy, String sortDirection, String filter);
+    ApiResponse<DashboardItemResponse> getAllItems(int pageNo, int pageSize, String sortBy, String sortDirection, String filter, String categorySlug);
 
     ApiResponse<DashboardTransactionResponse> getAllTransactions(int pageNo, int pageSize, String sortBy, String sortDirection);
 

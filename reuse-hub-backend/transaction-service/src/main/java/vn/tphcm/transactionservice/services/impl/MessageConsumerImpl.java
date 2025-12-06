@@ -10,8 +10,10 @@ package vn.tphcm.transactionservice.services.impl;
  * @date: 11/3/2025
  */
 
+import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ import vn.tphcm.transactionservice.services.MessageConsumer;
 import vn.tphcm.transactionservice.services.MessageProducer;
 import vn.tphcm.transactionservice.services.TransactionService;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @Service
@@ -40,13 +43,15 @@ public class MessageConsumerImpl implements MessageConsumer {
     @Override
     @RabbitListener(queues = "${rabbitmq.queues.saga.transaction-update-reserved}")
     @Transactional
-    public void handleItemReserved(ItemReservationEvent event) {
-        if (event == null || !event.isSuccess()) {
-            log.debug("Skipping invalid or unsuccessful event in handleItemReserved listener for transaction {}", (event != null ? event.getTransactionId() : "NULL"));
-            return;
-        }
+    public void handleItemReserved(ItemReservationEvent event, Channel channel, Message message) throws IOException {
+        try {
+            if (event == null || !event.isSuccess()) {
+                log.debug("Skipping invalid or unsuccessful event in handleItemReserved listener for transaction {}", (event != null ? event.getTransactionId() : "NULL"));
+                channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+                return;
+            }
 
-        log.info("SAGA Reply Received: ITEM_RESERVED for transactionId: {}", event.getTransactionId());
+            log.info("SAGA Reply Received: ITEM_RESERVED for transactionId: {}", event.getTransactionId());
 
         Transaction transaction = transactionRepository.findById(event.getTransactionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found during SAGA reply (RESERVED): " + event.getTransactionId()));
@@ -89,6 +94,16 @@ public class MessageConsumerImpl implements MessageConsumer {
         } else {
             log.warn("SAGA Ignored: Transaction {} was not in PENDING status (current: {}) when ITEM_RESERVED event was received.",
                     transaction.getId(), transaction.getStatus());
+        }
+            // Acknowledge message after successful processing
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+            log.debug("Message acknowledged for transaction {}", event.getTransactionId());
+            
+        } catch (Exception e) {
+            log.error("Error processing ITEM_RESERVED event for transaction {}: {}", 
+                     event != null ? event.getTransactionId() : "NULL", e.getMessage(), e);
+            // Reject and requeue the message for retry
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         }
     }
 

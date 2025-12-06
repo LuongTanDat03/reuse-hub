@@ -17,14 +17,13 @@ import VerifyEmailPage from "./screens/VerifyEmailPage/VerifyEmailPage"; // Impo
 import { ProfilePage } from "./screens/ProfilePage/ProfilePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Layout } from "./components/Layout";
-
 import RequireAuth from "./components/RequireAuth";
 import MapPage from "./screens/MapPage/MapPage";
 import ChatPage from "./screens/ChatPage/ChatPage";
 import PostCreatePage from "./screens/PostCreatePage/PostCreatePage";
 import { AdminPage } from "./screens/AdminPage/AdminPage";
 import { AdminDashboard } from "./screens/AdminPage/AdminDashboard";
-import { TransactionPage } from "./screens/TransactionPage/TransactionPage";
+import { TransactionManagementPage } from "./screens/TransactionManagementPage/TransactionManagementPage";
 import MyPosts from "./screens/MyPosts/MyPosts";
 import { PaymentPage } from "./screens/PaymentPage";
 import { PaymentSuccessPage } from "./screens/PaymentSuccessPage";
@@ -47,25 +46,26 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
           <Route path="/category/:categoryName" element={<CategoryPage />} />
           <Route path="/category/tags/:tagName" element={<CategoryPage />} />
+          <Route path="/search" element={<CategoryPage />} />
           <Route path="/product/:productId" element={<ProductDetailPage />} />
           <Route
             path="/admin"
             element={
-                <RequireAuth>
-                  <AdminPage />
-                </RequireAuth>
+              <RequireAuth>
+                <AdminPage />
+              </RequireAuth>
             }
           />
           <Route
             path="/admin/dashboard"
             element={
-                <RequireAuth>
-                  <AdminDashboard />
-                </RequireAuth>
+              <RequireAuth>
+                <AdminDashboard />
+              </RequireAuth>
             }
           />
           <Route path="/map" element={<Layout><MapPage /></Layout>} />
-          <Route path="/chat/:targetUserId" element={<Layout><ChatPage /></Layout>} />
+          <Route path="/chat/:targetUserId" element={<ChatPage />} />
           <Route
             path="/dang-tin"
             element={
@@ -79,9 +79,11 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route
             path="/transactions"
             element={
-              <RequireAuth>
-                <TransactionPage />
-              </RequireAuth>
+              <Layout>
+                <RequireAuth>
+                  <TransactionManagementPage />
+                </RequireAuth>
+              </Layout>
             }
           />
           <Route

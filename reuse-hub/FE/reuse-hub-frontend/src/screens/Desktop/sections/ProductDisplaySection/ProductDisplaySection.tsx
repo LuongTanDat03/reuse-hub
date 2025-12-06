@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
@@ -20,27 +20,26 @@ import {
 } from "../../../../api/item";
 import { ItemSearchRequest, ItemSummaryResponse, Category } from "../../../../types/api";
 
-// Category images mapping - có thể được quản lý từ backend sau này
 const categoryImageMap: Record<string, string> = {
   "Bất động sản": "/b-t---ng-s-n.png",
   "Xe cộ": "/xe-c-.png",
   "Thú cưng": "/th--c-ng.png",
-  "Đồ gia dụng, nội thất, cây cảnh": "/---gia-d-ng--n-i-th-t--c-y-c-nh.png",
-  "Giải trí, Thể thao, Sở thích": "/gi-i-tr---th--thao--s--th-ch.png",
+  "Đồ gia dụng": "/---gia-d-ng--n-i-th-t--c-y-c-nh.png",
+  "Thể thao": "/pngtree-sports-logo-icon-picture-png-image_7179399.png",
   "Mẹ và bé": "/m--v--b-.png",
   "Dịch vụ, Du lịch": "/d-ch-v---du-l-ch.png",
   "Cho tặng miễn phí": "/cho-t-ng-mi-n-ph-.png",
   "Việc làm": "/vi-c-l-m.png",
-  "Đồ điện tử": "/----i-n-t-.png",
+  "Điện tử": "/----i-n-t-.png",
   "Tủ lạnh, máy lạnh, máy giặt": "/t--l-nh--m-y-l-nh--m-y-gi-t.png",
   "Đồ dùng văn phòng, công nông nghiệp": "/---d-ng-v-n-ph-ng--c-ng-n-ng-nghi-p.png",
-  "Thời trang, Đồ dùng cá nhân": "/th-i-trang-----d-ng-c--nh-n.png",
+  "Thời trang": "/th-i-trang-----d-ng-c--nh-n.png",
   "Đồ ăn, thực phẩm và các loại khác": "/----n--th-c-ph-m-v--c-c-lo-i-kh-c.png",
   "Dịch vụ chăm sóc nhà cửa": "/d-ch-v--ch-m-s-c-nh--c-a.png",
+  "Sách": "gi-i-tr---th--thao--s--th-ch.png",
   "Tất cả danh mục": "/t-t-c--danh-m-c.png",
 };
 
-// Default image for categories without mapping
 const DEFAULT_CATEGORY_IMAGE = "/t-t-c--danh-m-c.png";
 
 interface ProductCardProps {
@@ -85,9 +84,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ item }) => {
                     </div>
                   )}
                   
-                  {/* Like Button removed on homepage */}
-
-                  {/* Overlay with time and image count */}
                   <div className="absolute w-[217px] h-[30px] top-[187px] left-0 bg-[linear-gradient(0deg,rgba(0,0,0,0.75)_0%,rgba(0,0,0,0)_100%)]">
                     <div className="absolute h-[18px] top-[5px] left-2.5 text-white text-xs font-bold whitespace-nowrap">
                       {getTimeAgo(new Date().toISOString())}
@@ -152,6 +148,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ item }) => {
 };
 
 export const ProductDisplaySection = (): JSX.Element => {
+  const navigate = useNavigate();
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeTab, setActiveTab] = useState("for-you");
   const [items, setItems] = useState<ItemSummaryResponse[]>([]);
@@ -159,7 +156,6 @@ export const ProductDisplaySection = (): JSX.Element => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
 
-  // Load categories from API
   useEffect(() => {
     const loadCategories = async () => {
       setLoadingCategories(true);
@@ -177,7 +173,6 @@ export const ProductDisplaySection = (): JSX.Element => {
     loadCategories();
   }, []);
 
-  // Load items based on active tab
   useEffect(() => {
     const loadItems = async () => {
       setLoading(true);
@@ -194,8 +189,7 @@ export const ProductDisplaySection = (): JSX.Element => {
             response = await getAllItems(0, 5, "createdAt", "desc");
         }
         setItems(response.data.content);
-        
-        // Like state removed on homepage
+
       } catch (error) {
         console.error("Error loading items:", error);
         setItems([]);
@@ -207,26 +201,13 @@ export const ProductDisplaySection = (): JSX.Element => {
     loadItems();
   }, [activeTab]);
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     if (!searchKeyword.trim()) {
-      // Reset to default view
-      setActiveTab("for-you");
       return;
     }
     
-    setLoading(true);
-    try {
-      const searchRequest: ItemSearchRequest = {
-        keyword: searchKeyword
-      };
-      const response = await searchItems(searchRequest, 0, 5, "createdAt", "desc");
-      setItems(response.data.content);
-    } catch (error) {
-      console.error("Error searching items:", error);
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
+    // Navigate to search results page
+    navigate(`/search?q=${encodeURIComponent(searchKeyword)}`);
   };
 
   return (
@@ -285,7 +266,6 @@ export const ProductDisplaySection = (): JSX.Element => {
                 ) : categories && categories.length > 0 ? (
                   categories.map((category) => {
                     const categoryImage = categoryImageMap[category.name] || DEFAULT_CATEGORY_IMAGE;
-                    // Use slug if available, otherwise use name
                     const categoryIdentifier = category.slug || category.name;
                     return (
                       <Link
@@ -368,12 +348,6 @@ export const ProductDisplaySection = (): JSX.Element => {
           </div>
         </div>
       </div>
-
-      <img
-        className="relative self-stretch w-full h-[576px] object-cover"
-        alt="Image"
-        src="/image-17.png"
-      />
     </section>
   );
 };

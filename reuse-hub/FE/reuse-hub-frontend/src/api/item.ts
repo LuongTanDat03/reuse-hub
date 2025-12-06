@@ -314,10 +314,7 @@ export const searchItems = async (
  */
 export const getAllCategories = async (): Promise<ApiResponse<Category[]>> => {
   const response = await axios.get<ApiResponse<Category[]>>(
-    `${ITEM_API_BASE_URL}/public/categories`,
-    {
-      // No auth headers needed for public endpoint
-    }
+    `${ITEM_API_BASE_URL}/public/categories`
   );
   return response.data;
 };

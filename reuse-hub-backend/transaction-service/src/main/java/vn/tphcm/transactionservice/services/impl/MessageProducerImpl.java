@@ -16,10 +16,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.tphcm.event.commons.EventType;
-import vn.tphcm.event.dto.FeedbackEvent;
-import vn.tphcm.event.dto.NotificationMessage;
-import vn.tphcm.event.dto.TransactionEventMessage;
-import vn.tphcm.event.dto.TransactionUpdateEvent;
+import vn.tphcm.event.dto.*;
 import vn.tphcm.transactionservice.services.MessageProducer;
 
 @Service
@@ -49,6 +46,9 @@ public class MessageProducerImpl implements MessageProducer {
 
     @Value("${rabbitmq.routing-keys.saga.feedback.submitted}")
     private String feedbackSubmittedRK;
+    
+    @Value("${rabbitmq.routing-keys.wallet.credit}")
+    private String walletCreditRK;
 
     @Override
     public void publishTransactionEvent(TransactionEventMessage event) {
@@ -115,6 +115,16 @@ public class MessageProducerImpl implements MessageProducer {
             log.info("Published feedback event: {}", event);
         } catch (Exception e) {
             log.error("Failed to publish feedback event: {}", e.getMessage());
+        }
+    }
+
+    @Override
+    public void publishWalletEvent(WalletEvent event) {
+        try {
+            rabbitTemplate.convertAndSend(transactionExchange, walletCreditRK, event);
+            log.info("Published wallet credit event for user {}: {} VND", event.getUserId(), event.getAmount());
+        } catch (Exception e) {
+            log.error("Failed to publish wallet event: {}", e.getMessage());
         }
     }
 }

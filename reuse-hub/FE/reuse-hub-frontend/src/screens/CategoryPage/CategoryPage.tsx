@@ -17,6 +17,8 @@ import { ItemSummaryResponse, Category } from "../../types/api";
 export const CategoryPage = (): JSX.Element => {
   const { categoryName, tagName } = useParams<{ categoryName?: string; tagName?: string }>();
   const navigate = useNavigate();
+  const searchParams = new URLSearchParams(window.location.search);
+  const searchKeyword = searchParams.get('q') || '';
 
   const [items, setItems] = useState<ItemSummaryResponse[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -49,7 +51,10 @@ export const CategoryPage = (): JSX.Element => {
       try {
         let response;
 
-        if (tagName) {
+        if (searchKeyword) {
+          // Search mode
+          response = await searchItems({ keyword: searchKeyword }, page, 20, sortBy, sortDirection);
+        } else if (tagName) {
           // Load by tag
           response = await getItemsByTags([tagName], page, 20, sortBy, sortDirection);
         } else if (categoryName) {
@@ -72,7 +77,7 @@ export const CategoryPage = (): JSX.Element => {
     };
 
     loadItems();
-  }, [categoryName, tagName, page, sortBy, sortDirection]);
+  }, [categoryName, tagName, searchKeyword, page, sortBy, sortDirection]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -101,6 +106,7 @@ export const CategoryPage = (): JSX.Element => {
   };
 
   const getCurrentCategoryName = () => {
+    if (searchKeyword) return `Kết quả tìm kiếm: "${searchKeyword}"`;
     if (tagName) return `Tag: ${tagName}`;
     if (categoryName === "tat-ca-san-pham") return "Tất cả sản phẩm";
     const category = categories.find((c) => c.slug === categoryName);

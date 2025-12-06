@@ -42,11 +42,12 @@ public class AdminController {
                                                           @RequestParam(defaultValue = "10") int pageSize,
                                                           @RequestParam(defaultValue = "createdAt") String sortBy,
                                                           @RequestParam(defaultValue = "desc") String sortDirection,
-                                                          @RequestParam(required = false) String filter) {
-        log.info("AdminController - getAllItems: Received request to fetch all items with pageNo={}, pageSize={}, sortBy={}, sortDirection={}",
-                pageNo, pageSize, sortBy, sortDirection);
+                                                          @RequestParam(required = false) String filter,
+                                                          @RequestParam(required = false) String categorySlug) {
+        log.info("AdminController - getAllItems: Received request to fetch all items with pageNo={}, pageSize={}, sortBy={}, sortDirection={}, filter={}, categorySlug={}",
+                pageNo, pageSize, sortBy, sortDirection, filter, categorySlug);
 
-        return adminService.getAllItems(pageNo, pageSize, sortBy, sortDirection, filter);
+        return adminService.getAllItems(pageNo, pageSize, sortBy, sortDirection, filter, categorySlug);
     }
 
     @GetMapping("/transactions")

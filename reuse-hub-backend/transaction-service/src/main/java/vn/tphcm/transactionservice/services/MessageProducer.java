@@ -6,10 +6,7 @@
 
 package vn.tphcm.transactionservice.services;
 
-import vn.tphcm.event.dto.FeedbackEvent;
-import vn.tphcm.event.dto.NotificationMessage;
-import vn.tphcm.event.dto.TransactionEventMessage;
-import vn.tphcm.event.dto.TransactionUpdateEvent;
+import vn.tphcm.event.dto.*;
 
 /*
  * @author: Luong Tan Dat
@@ -24,4 +21,6 @@ public interface MessageProducer {
     void publishNotification(NotificationMessage event);
 
     void publishFeedbackEvent(FeedbackEvent event);
+
+    void publishWalletEvent(WalletEvent event);
 }

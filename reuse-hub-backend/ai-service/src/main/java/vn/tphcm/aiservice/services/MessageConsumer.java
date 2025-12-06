@@ -10,8 +10,10 @@ package vn.tphcm.aiservice.services;
  * @date: 11/22/2025
  */
 
+import com.rabbitmq.client.Channel;
 import event.dto.EventMessage;
+import org.springframework.amqp.core.Message;
 
 public interface MessageConsumer {
-    void handleItemCreated(EventMessage event);
+    void handleItemCreated(EventMessage event, Channel channel, Message message) throws Exception;
 }

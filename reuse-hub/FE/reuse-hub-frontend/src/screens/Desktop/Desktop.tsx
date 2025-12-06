@@ -1,6 +1,7 @@
 import { ProductDisplaySection } from "./sections/ProductDisplaySection/ProductDisplaySection";
 import { PromotionalBannerSection } from "./sections/PromotionalBannerSection/PromotionalBannerSection";
 import { Header } from "./sections/Header/Header";
+import { ChatWidget } from "../../components/ChatWidget/ChatWidget";
 
 export const Desktop = (): JSX.Element => {
   return (
@@ -29,6 +30,9 @@ export const Desktop = (): JSX.Element => {
         <ProductDisplaySection />
         <PromotionalBannerSection />
       </div>
+
+      {/* Chat Widget - Floating button */}
+      <ChatWidget />
     </div>
   );
 };

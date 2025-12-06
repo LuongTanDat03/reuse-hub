@@ -10,17 +10,19 @@ package vn.tphcm.itemservice.services;
  * @date: 11/3/2025
  */
 
+import com.rabbitmq.client.Channel;
+import org.springframework.amqp.core.Message;
 import vn.tphcm.event.dto.AiTagsGeneratedEvent;
 import vn.tphcm.event.dto.FeedbackEvent;
 import vn.tphcm.event.dto.PaymentEvent;
 import vn.tphcm.event.dto.TransactionEventMessage;
 
 public interface MessageConsumer {
-    void handleTransactionEvent(TransactionEventMessage event);
+    void handleTransactionEvent(TransactionEventMessage event, Channel channel, Message message) throws Exception;
 
-    void handleFeedbackSubmitted(FeedbackEvent event);
+    void handleFeedbackSubmitted(FeedbackEvent event, Channel channel, Message message) throws Exception;
 
-    void handlePaymentEvent(PaymentEvent event);
+    void handlePaymentEvent(PaymentEvent event, Channel channel, Message message) throws Exception;
 
-    void handleAiTagsGenerated(AiTagsGeneratedEvent event);
+    void handleAiTagsGenerated(AiTagsGeneratedEvent event, Channel channel, Message message) throws Exception;
 }

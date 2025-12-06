@@ -62,7 +62,7 @@ public class ProfileServiceImpl implements ProfileService {
         User user = userMapper.toUser(request);
 
         user.setAvatarUrl(avatar);
-
+        user.setWallet(0L);
         User savedUser = userRepository.save(user);
 
         if (request.getAddress() != null && !request.getAddress().isEmpty()) {
@@ -135,6 +135,35 @@ public class ProfileServiceImpl implements ProfileService {
                 .build();
     }
 
+    @Override
+    public ApiResponse<Long> getWalletBalance(String userId) {
+        User user = getUserId(userId);
+        
+        return ApiResponse.<Long>builder()
+                .status(OK.value())
+                .message("Get wallet balance successfully")
+                .data(user.getWallet())
+                .timestamp(OffsetDateTime.now())
+                .build();
+    }
+
+    @Override
+    public ApiResponse<Long> getTotalWalletBalance() {
+        List<User> allUsers = userRepository.findAll();
+        Long totalBalance = allUsers.stream()
+                .mapToLong(User::getWallet)
+                .sum();
+        
+        log.info("Total wallet balance across {} users: {}", allUsers.size(), totalBalance);
+        
+        return ApiResponse.<Long>builder()
+                .status(OK.value())
+                .message("Get total wallet balance successfully")
+                .data(totalBalance)
+                .timestamp(OffsetDateTime.now())
+                .build();
+    }
+
     private void setAddressMapper(User user, List<ProfileAddressRequest> addresses) {
          List<Address> address = addresses.stream()
                     .map(dto -> {
@@ -155,24 +184,5 @@ public class ProfileServiceImpl implements ProfileService {
                     log.error("User not found with userId: {}", userId);
                     return new ResourceNotFoundException("User not found with userId: " + userId);
                 });
-    }
-
-    private Pageable createPageable(int pageNo, int pageSize, String sortBy, String sortDirection) {
-        Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection)
-                ? Sort.Direction.ASC : Sort.Direction.DESC;
-
-        Sort sort = Sort.by(direction, sortBy != null ? sortBy : "createdAt");
-        return PageRequest.of(pageNo, pageSize, sort);
-    }
-
-     private <T> PageResponse<T> createPageResponse(Page<T> page) {
-        return PageResponse.<T>builder()
-                .content(page.getContent())
-                .pageNo(page.getNumber())
-                .pageSize(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .last(page.isLast())
-                .build();
     }
 }
