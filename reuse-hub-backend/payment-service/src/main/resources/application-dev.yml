@@ -38,9 +38,9 @@ spring:
         default-requeue-rejected: false # if false, message will be sent to dead-letter queue
 stripe:
   api:
-    key: ${STRIPE_SECRET_KEY:sk_test_51SPKKuLAymzdE2Wa7msglovziVZq1DV1VMQ4iJLhGUK2frcGUuushd8SxS0yya3keIIOoTVLqyWYyQd7ZzHgpyZq009crDg9xh}
+    key: ${STRIPE_SECRET_KEY}
   webhook:
-    secret: ${STRIPE_WEBHOOK_SECRET:whsec_98f9ee3cd4bfd769428deee53f7369066f80bbf6dbc0b71567c30950529a5c62}
+    secret: ${STRIPE_WEBHOOK_SECRET}
 
 rabbitmq:
   exchange:
