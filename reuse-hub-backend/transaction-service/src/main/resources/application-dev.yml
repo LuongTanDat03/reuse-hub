@@ -1,0 +1,87 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: ${DATABASE_URL_TRANSACTION:jdbc:postgresql://localhost:5432/transaction}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual # publisher-returns: message unacknowledged
+        concurrency: 2 # many consumers for one queue
+        max-concurrency: 10 # max number of consumers for one queue
+        prefetch: 5 # number of messages to prefetch
+        shutdown-timeout: 10s
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          max-interval: 10000ms
+          multiplier: 2.0
+        default-requeue-rejected: false # if false, message will be sent to dead-letter queue
+
+rabbitmq:
+  exchanges:
+    transaction-exchange: ex.transaction
+    notification-exchange: ex.notification
+    saga: ex.saga
+  queues:
+    saga:
+      transaction-update-reserved: q.saga.transaction-update-reserved-queue
+      transaction-update-failed: q.saga.transaction-update-failed-queue
+    payment:
+      transaction-payment: q.saga.payment-completed
+  routing-keys:
+    transaction:
+      created: r.transaction.created
+      updated: r.transaction.updated
+      cancelled: r.transaction.canceled
+      completed: r.transaction.completed
+      status-updated: r.transaction.status-updated
+    notification: r.notification.send
+    saga:
+      item-reserved: r.item-reserved
+      item-reservation-failed: r.item-reservation-failed
+      feedback:
+        submitted: r.feedback.submitted
+    payment:
+      completed: r.saga.payment-completed
+      failed: r.saga.payment-failed
+    wallet:
+      credit: r.wallet.credit
+
+feign:
+  client:
+    config:
+      item-service:
+        url: "http://localhost:8083/item-feign"
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: reuse-hub
+    version: 1.0.0

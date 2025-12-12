@@ -31,7 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-
-### Github-Secret ###
-identity-service/src/main/resources/application-dev.yml

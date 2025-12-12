@@ -561,6 +561,32 @@ services:
         limits:
           memory: 512M
 
+  # ==================== NGINX REVERSE PROXY ====================
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: reuse-hub/nginx:${TAG:-latest}
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - reuse-hub-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 # ==================== VOLUMES ====================
 
 volumes:
@@ -569,3 +595,4 @@ volumes:
   neo4j_logs:
   redis_data:
   rabbitmq_data:
+  nginx_logs:

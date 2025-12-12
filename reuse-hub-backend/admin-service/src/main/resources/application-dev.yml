@@ -1,0 +1,27 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+feign:
+  client:
+    config:
+      item-service:
+        url: "http://localhost:8083/item-feign"
+      identity-service:
+        url: "http://localhost:8081/identity-feign"
+      transaction-service:
+        url: "http://localhost:8084/transaction-feign"
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: reuse-hub
+    version: 1.0.0
