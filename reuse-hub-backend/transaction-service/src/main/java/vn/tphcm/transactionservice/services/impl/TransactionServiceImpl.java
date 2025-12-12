@@ -94,13 +94,17 @@ public class TransactionServiceImpl implements TransactionService {
                 ? item.getImages().get(0)
                 : null;
 
-        Long totalAmount = item.getPrice() * request.getQuantity();
+        // Use negotiated price from request if provided, otherwise use item price
+        Long finalPrice = (request.getPrice() != null && request.getPrice() > 0) 
+                ? request.getPrice() 
+                : item.getPrice();
+        Long totalAmount = finalPrice * request.getQuantity();
 
         Transaction transaction = Transaction.builder()
                 .itemId(request.getItemId())
                 .itemTitle(item.getTitle())
                 .itemImageUrl(itemImageUrl)
-                .itemPrice(item.getPrice())
+                .itemPrice(finalPrice)
                 .buyerId(userId)
                 .sellerId(item.getUserId())
                 .status(TransactionStatus.PENDING)

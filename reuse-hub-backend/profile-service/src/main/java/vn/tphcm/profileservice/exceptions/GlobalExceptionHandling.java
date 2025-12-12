@@ -31,6 +31,20 @@ public class GlobalExceptionHandling {
     private ErrorResponse errorResponse;
 
     /**
+     * Handle AppException for KYC and other custom errors.
+     */
+    @ExceptionHandler(AppException.class)
+    public ErrorResponse handleAppException(AppException e, WebRequest req) {
+        errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(new Date());
+        errorResponse.setPath(req.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(e.getErrorCode().getCode());
+        errorResponse.setError(e.getErrorCode().getHttpStatus().getReasonPhrase());
+        errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
+
+    /**
      * Handle exception when the request is forbidden (e.g., user does not have permission to access the resource).
      *
      * @param e

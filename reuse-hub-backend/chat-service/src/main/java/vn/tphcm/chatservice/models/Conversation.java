@@ -44,9 +44,15 @@ public class Conversation extends AbstractEntity<String> implements Serializable
     private Map<String, Boolean> notificationSettings;
 
     // Item information (for product-related conversations)
+    @Indexed
     private String itemId;
     
     private String itemTitle;
     
     private String itemThumbnail;
+    
+    private Double itemPrice;
+    
+    // Owner of the item (seller)
+    private String itemOwnerId;
 }

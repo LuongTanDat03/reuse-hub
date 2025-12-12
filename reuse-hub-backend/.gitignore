@@ -68,3 +68,5 @@ credentials/
 # Backup files
 *.bak
 *.backup
+
+.env

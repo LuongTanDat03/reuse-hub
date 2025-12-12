@@ -11,6 +11,7 @@ package vn.tphcm.profileservice.dtos.response;
  */
 
 import lombok.*;
+import vn.tphcm.profileservice.commons.KycStatus;
 
 import java.util.List;
 
@@ -35,4 +36,8 @@ public class ProfileResponse {
     private Long wallet;
 
     private List<AddressResponse> address;
+
+    private KycStatus kycStatus;
+
+    private boolean isVerified;
 }

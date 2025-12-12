@@ -47,4 +47,12 @@ public class MessageResponse {
 
     private Instant updatedAt;
 
+    // Price offer fields
+    private Double offerPrice;
+    private String offerStatus;
+    private String relatedOfferId;
+    private String itemId;
+    private String itemTitle;
+    private String itemThumbnail;
+    private Double originalPrice;
 }

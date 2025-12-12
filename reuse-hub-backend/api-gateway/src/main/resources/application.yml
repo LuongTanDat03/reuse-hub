@@ -11,6 +11,20 @@ spring:
     active: @spring.profiles.active@
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
       server:
         webflux:
           discovery:
@@ -77,6 +91,27 @@ spring:
               uri: lb://admin-service
               predicates:
                 - Path=${app.api-prefix}/admin/**
+              filters:
+                - StripPrefix=2
+
+            - id: auction-service
+              uri: lb://auction-service
+              predicates:
+                - Path=${app.api-prefix}/auction/**
+              filters:
+                - StripPrefix=2
+
+            - id: auction-service-ws
+              uri: lb:ws://auction-service
+              predicates:
+                - Path=${app.api-prefix}/auction/ws/**
+              filters:
+                - StripPrefix=2
+
+            - id: moderation-service
+              uri: lb://moderation-service
+              predicates:
+                - Path=${app.api-prefix}/moderation/**
               filters:
                 - StripPrefix=2
 

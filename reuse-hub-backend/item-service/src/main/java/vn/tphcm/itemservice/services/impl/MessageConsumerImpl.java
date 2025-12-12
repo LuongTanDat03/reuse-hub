@@ -175,6 +175,8 @@ public class MessageConsumerImpl implements MessageConsumer {
             itemService.processNewFeedback(event);
             log.info("SAGA Processed: Feedback for item {} successfully stored.", event.getItemId());
 
+            cacheService.evictCachedItem(event.getItemId());
+            cacheService.evictAllItems();
             // Acknowledge success
             channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
             log.debug("Feedback event acknowledged for item {}", event.getItemId());
@@ -209,6 +211,9 @@ public class MessageConsumerImpl implements MessageConsumer {
                 if (item.getStatus() == ItemStatus.RESERVED) {
                     item.setStatus(ItemStatus.SOLD);
                     itemRepository.save(item);
+
+                    cacheService.evictCachedItem(event.getLinkedItemId());
+                    cacheService.evictAllItems();
                     log.info("SAGA Processed: Item {} status updated to SOLD after payment completion", item.getId());
                 } else {
                     log.warn("SAGA Ignored: Payment completed for item {} but item status is {} (expected RESERVED)",
@@ -219,6 +224,9 @@ public class MessageConsumerImpl implements MessageConsumer {
                 if (item.getStatus() == ItemStatus.RESERVED) {
                     item.setStatus(ItemStatus.AVAILABLE);
                     itemRepository.save(item);
+
+                    cacheService.evictCachedItem(event.getLinkedItemId());
+                    cacheService.evictAllItems();
                     log.info("SAGA Processed: Item {} status updated to AVAILABLE after payment failure", item.getId());
                 } else {
                     log.warn("SAGA Ignored: Payment failed for item {} but item status is {} (expected RESERVED)",

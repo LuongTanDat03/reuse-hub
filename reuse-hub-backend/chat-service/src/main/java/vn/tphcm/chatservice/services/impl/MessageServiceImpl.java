@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.tphcm.chatservice.commons.MessageStatus;
+import vn.tphcm.chatservice.commons.MessageType;
 import vn.tphcm.chatservice.dtos.ApiResponse;
 import vn.tphcm.chatservice.dtos.PageResponse;
 import vn.tphcm.chatservice.dtos.request.SendMessageRequest;
@@ -51,45 +52,101 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public ApiResponse<MessageResponse> sendMessage(SendMessageRequest request) {
-        log.info("Sending message from {} to conversation {}", request.getSenderId(), request.getRecipientId());
+        log.info("Sending message from {} to {}, conversationId: {}", 
+            request.getSenderId(), request.getRecipientId(), request.getConversationId());
 
-        List<Conversation> conversations = conversationRepository
-                .findByParticipantIds(request.getSenderId(), request.getRecipientId());
+        Conversation conversation;
         
-        if (conversations.isEmpty()) {
-            throw new ResourceNotFoundException("Conversation not found or access denied");
+        // If conversationId is provided, use it directly
+        if (request.getConversationId() != null && !request.getConversationId().isBlank()) {
+            conversation = conversationRepository.findById(request.getConversationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found: " + request.getConversationId()));
+            
+            // Verify sender is a participant
+            if (!conversation.getParticipantIds().contains(request.getSenderId())) {
+                throw new InvalidDataException("User is not a participant of this conversation");
+            }
+        } else {
+            // Fallback to finding by participants
+            List<Conversation> conversations = conversationRepository
+                    .findByParticipantIds(request.getSenderId(), request.getRecipientId());
+            
+            if (conversations.isEmpty()) {
+                throw new ResourceNotFoundException("Conversation not found or access denied");
+            }
+            
+            conversation = conversations.get(0);
         }
-        
-        Conversation conversation = conversations.get(0);
 
-        Message message = Message.builder()
+        // Determine message type
+        MessageType messageType = MessageType.TEXT;
+        if (request.getMessageType() != null) {
+            try {
+                messageType = MessageType.valueOf(request.getMessageType());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid message type: {}, defaulting to TEXT", request.getMessageType());
+            }
+        }
+
+        // Build message with offer fields if applicable
+        Message.MessageBuilder messageBuilder = Message.builder()
                 .conversationId(conversation.getId())
                 .senderId(request.getSenderId())
                 .recipientId(request.getRecipientId())
                 .content(request.getContent())
-                .status(MessageStatus.SENT)
-                .build();
+                .type(messageType)
+                .status(MessageStatus.SENT);
 
+        // Handle price offer messages
+        if (isPriceOfferType(messageType)) {
+            log.info("Price offer message - offerPrice: {}, itemId: {}, originalPrice: {}", 
+                request.getOfferPrice(), request.getItemId(), request.getOriginalPrice());
+            messageBuilder
+                .offerPrice(request.getOfferPrice())
+                .itemId(request.getItemId())
+                .itemTitle(request.getItemTitle())
+                .itemThumbnail(request.getItemThumbnail())
+                .originalPrice(request.getOriginalPrice())
+                .relatedOfferId(request.getRelatedOfferId());
+
+            // Set offer status based on message type
+            if (messageType == MessageType.PRICE_OFFER || messageType == MessageType.OFFER_COUNTERED) {
+                messageBuilder.offerStatus("PENDING");
+            } else if (messageType == MessageType.OFFER_ACCEPTED) {
+                messageBuilder.offerStatus("ACCEPTED");
+                // Update original offer status if relatedOfferId is provided
+                updateOriginalOfferStatus(request.getRelatedOfferId(), "ACCEPTED");
+            } else if (messageType == MessageType.OFFER_REJECTED) {
+                messageBuilder.offerStatus("REJECTED");
+                updateOriginalOfferStatus(request.getRelatedOfferId(), "REJECTED");
+            }
+        }
+
+        Message message = messageBuilder.build();
         messageRepository.save(message);
-        log.info("Message saved with ID: {}", message.getId());
+        log.info("Message saved with ID: {}, type: {}", message.getId(), messageType);
 
         conversation.setLastMessageId(String.valueOf(message.getId()));
         conversation.setLastMessageTimestamp(Instant.now());
         conversationRepository.save(conversation);
 
+        // Build notification
+        String notificationTitle = getNotificationTitle(messageType);
+        String notificationContent = getNotificationContent(request, messageType);
+
         NotificationMessage notification = NotificationMessage.builder()
                 .notificationId(UUID.randomUUID().toString())
                 .recipientId(request.getRecipientId())
-                .title("New Message")
-                .content(request.getContent())
+                .title(notificationTitle)
+                .content(notificationContent)
                 .type(EventType.NEW_MESSAGE)
                 .actorUserId(request.getSenderId())
                 .data(Map.of("conversationId", conversation.getId(),
-                        "senderId", request.getSenderId()))
+                        "senderId", request.getSenderId(),
+                        "messageType", messageType.name()))
                 .build();
 
         messagePublisher.publishNotificationMessage(notification);
-
         log.info("Notification published for message ID: {}", message.getId());
 
         return ApiResponse.<MessageResponse>builder()
@@ -97,6 +154,47 @@ public class MessageServiceImpl implements MessageService {
                 .data(messageMapper.toResponse(message))
                 .status(OK.value())
                 .build();
+    }
+
+    private boolean isPriceOfferType(MessageType type) {
+        return type == MessageType.PRICE_OFFER || 
+               type == MessageType.OFFER_ACCEPTED || 
+               type == MessageType.OFFER_REJECTED || 
+               type == MessageType.OFFER_COUNTERED;
+    }
+
+    private void updateOriginalOfferStatus(String offerId, String status) {
+        if (offerId == null || offerId.isBlank()) return;
+        
+        messageRepository.findById(offerId).ifPresent(originalOffer -> {
+            originalOffer.setOfferStatus(status);
+            messageRepository.save(originalOffer);
+            log.info("Updated original offer {} status to {}", offerId, status);
+        });
+    }
+
+    private String getNotificationTitle(MessageType type) {
+        return switch (type) {
+            case PRICE_OFFER -> "Đề xuất giá mới";
+            case OFFER_ACCEPTED -> "Đề xuất giá được chấp nhận";
+            case OFFER_REJECTED -> "Đề xuất giá bị từ chối";
+            case OFFER_COUNTERED -> "Đề xuất giá mới từ người bán";
+            default -> "Tin nhắn mới";
+        };
+    }
+
+    private String getNotificationContent(SendMessageRequest request, MessageType type) {
+        if (isPriceOfferType(type) && request.getOfferPrice() != null) {
+            String formattedPrice = String.format("%,.0f đ", request.getOfferPrice());
+            return switch (type) {
+                case PRICE_OFFER -> "Đề xuất giá: " + formattedPrice;
+                case OFFER_ACCEPTED -> "Đã chấp nhận giá: " + formattedPrice;
+                case OFFER_REJECTED -> "Đã từ chối đề xuất giá";
+                case OFFER_COUNTERED -> "Đề xuất giá mới: " + formattedPrice;
+                default -> request.getContent();
+            };
+        }
+        return request.getContent();
     }
 
     @Override

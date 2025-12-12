@@ -48,7 +48,15 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private String[] publicEndpoints = {
             ".*/identity/auth/.*",
             ".*/items/public/.*",
-            ".*/payments/stripe/webhook"
+            ".*/payments/stripe/webhook",
+            ".*/auction/auctions/active.*",
+            ".*/auction/auctions/ending-soon.*",
+            ".*/auction/auctions/hot.*",
+            ".*/auction/auctions/search.*",
+            ".*/auction/auctions/[^/]+/bids.*",
+            ".*/auction/auctions/[^/]+(?<!/(bid|cancel|buy-now))/.*",
+            ".*/auction/ws/.*",
+            ".*/moderation/reports/.*"
     };
 
     @Value("${app.api-prefix}")

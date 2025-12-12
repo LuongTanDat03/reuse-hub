@@ -23,4 +23,6 @@ public interface ConversationService {
     ApiResponse<ConversationResponse> getConversations(String userFirstId, String userSecondId, String itemId);
 
     ApiResponse<PageResponse<ConversationResponse>> getMyConversations(String userId, int page, int size);
+
+    ApiResponse<ConversationResponse> getConversationById(String conversationId, String userId);
 }

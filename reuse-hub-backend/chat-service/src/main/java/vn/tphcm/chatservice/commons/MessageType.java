@@ -20,5 +20,10 @@ public enum MessageType {
     LOCATION,
     CONTACT,
     STICKER,
-    GIF
+    GIF,
+    // Price negotiation types
+    PRICE_OFFER,      // Buyer sends a price offer
+    OFFER_ACCEPTED,   // Seller accepts the offer
+    OFFER_REJECTED,   // Seller rejects the offer
+    OFFER_COUNTERED   // Seller counters with a different price
 }

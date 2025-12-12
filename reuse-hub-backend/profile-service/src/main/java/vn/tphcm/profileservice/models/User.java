@@ -19,6 +19,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.Point;
 import vn.tphcm.profileservice.commons.Gender;
+import vn.tphcm.profileservice.commons.KycStatus;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -86,6 +87,11 @@ public class User extends AbstractEntity<String> implements Serializable {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserHistory> histories = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "kyc_status")
+    private KycStatus kycStatus = KycStatus.NOT_SUBMITTED;
 
     public void replaceAddresses(List<Address> newAddresses) {
         if (this.address == null) {

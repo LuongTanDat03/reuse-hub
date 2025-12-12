@@ -66,6 +66,17 @@ public class ConservationController {
         return conversationService.getMyConversations(requesterId, page, size);
     }
 
+    @GetMapping("/{conversationId}")
+    public ApiResponse<ConversationResponse> getConversationById(
+            @RequestHeader("X-User-Id") String userId,
+            @PathVariable String conversationId) {
+        log.info("Get conversation by id request from userId: {} for conversation: {}", userId, conversationId);
+
+        String requesterId = getUserIdFromHeader(userId);
+
+        return conversationService.getConversationById(conversationId, requesterId);
+    }
+
     @GetMapping("/{conversationId}/messages")
     public ApiResponse<PageResponse<MessageResponse>> getMessages(
             @RequestHeader("X-User-Id") String userId,

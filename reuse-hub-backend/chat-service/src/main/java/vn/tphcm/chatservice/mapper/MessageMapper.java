@@ -11,10 +11,18 @@ package vn.tphcm.chatservice.mapper;
  */
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import vn.tphcm.chatservice.dtos.response.MessageResponse;
 import vn.tphcm.chatservice.models.Message;
 
 @Mapper(componentModel = "spring")
 public interface MessageMapper {
+    @Mapping(target = "offerPrice", source = "offerPrice")
+    @Mapping(target = "offerStatus", source = "offerStatus")
+    @Mapping(target = "relatedOfferId", source = "relatedOfferId")
+    @Mapping(target = "itemId", source = "itemId")
+    @Mapping(target = "itemTitle", source = "itemTitle")
+    @Mapping(target = "itemThumbnail", source = "itemThumbnail")
+    @Mapping(target = "originalPrice", source = "originalPrice")
     MessageResponse toResponse(Message message);
 }

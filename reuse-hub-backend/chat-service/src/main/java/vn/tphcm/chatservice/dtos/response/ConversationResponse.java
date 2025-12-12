@@ -50,4 +50,8 @@ public class ConversationResponse {
     private String itemTitle;
 
     private String itemThumbnail;
+
+    private Double itemPrice;
+
+    private String itemOwnerId;
 }

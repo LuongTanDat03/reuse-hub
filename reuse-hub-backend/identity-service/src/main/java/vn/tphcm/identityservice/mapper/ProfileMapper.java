@@ -27,5 +27,6 @@ public interface ProfileMapper {
     @Mapping(target = "lastName", ignore = true)
     @Mapping(target = "avatarUrl", ignore = true)
     @Mapping(target = "address", ignore = true)
+    @Mapping(target = "wallet", ignore = true)
     InfoUserResponse toInfoProfile(User user);
 }

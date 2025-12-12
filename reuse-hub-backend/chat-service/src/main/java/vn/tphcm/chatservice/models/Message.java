@@ -46,4 +46,13 @@ public class Message extends AbstractEntity<String> implements Serializable {
     private MessageType type;
 
     private EnumMap<ReactionType, List<String>> reactions;
+
+    // Price offer fields
+    private Double offerPrice;           // The offered price
+    private String offerStatus;          // PENDING, ACCEPTED, REJECTED, COUNTERED
+    private String relatedOfferId;       // Reference to original offer message (for accept/reject/counter)
+    private String itemId;               // Item being negotiated
+    private String itemTitle;            // Item title for display
+    private String itemThumbnail;        // Item thumbnail for display
+    private Double originalPrice;        // Original item price for reference
 }
