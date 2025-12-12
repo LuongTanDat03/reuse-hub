@@ -1,0 +1,109 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: ${DATABASE_URL_ITEM:jdbc:postgresql://localhost:5432/item}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        spatial:
+          dialect: org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual # publisher-returns: message unacknowledged
+        concurrency: 2 # many consumers for one queue
+        max-concurrency: 10 # max number of consumers for one queue
+        prefetch: 5 # number of messages to prefetch
+        shutdown-timeout: 10s
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          max-interval: 10000ms
+          multiplier: 2.0
+        default-requeue-rejected: false # if false, message will be sent to dead-letter queue
+
+supabase:
+  url: ${SUPABASE_URL:https://yrtipbmujtikijomslgm.supabase.co}
+  service-key: ${SUPABASE_SERVICE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlydGlwYm11anRpa2lqb21zbGdtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDUxODkxNiwiZXhwIjoyMDc2MDk0OTE2fQ.bnwZxeVsIJWhkRyL7K9usaDkjmsp088EYf_ap0DVJhM}
+  bucket: ${SUPABASE_BUCKET:upload-images}
+  public-url: ${SUPABASE_PUBLIC_URL:https://yrtipbmujtikijomslgm.storage.supabase.co/storage/v1/object/public}
+
+file:
+  upload:
+    max-size: ${FILE_MAX_SIZE:50}
+    allowed-types: image/jpeg,image/png,image/gif,image/webp
+    max-images: ${MAX_IMAGES:10}
+    image:
+      max-width: ${IMAGE_MAX_WIDTH:1920}
+      max-height: ${IMAGE_MAX_HEIGHT:1080}
+      thumbnail-size: ${THUMBNAIL_WIDTH:300}
+      compress-quality: ${COMPRESS_QUALITY:0.8}
+
+rabbitmq:
+  exchange:
+    item: ex.item
+    notification: ex.notification
+    saga: ex.saga
+  routing-key:
+    saga:
+      item-reserved: r.saga.item.reserved
+      item-reservation-cancelled: r.saga.item.reservation.cancelled
+    transaction:
+      created: r.transaction.created
+      cancelled: r.transaction.cancelled
+      completed: r.transaction.completed
+    saga-feedback:
+      submitted: r.saga.feedback.submitted
+    item:
+      created: r.item.created
+      liked: r.item.liked
+      unliked: r.item.unliked
+      deleted: r.item.deleted
+      viewed: r.item.viewed
+      updated: r.item.updated
+    payment:
+      completed: r.saga.payment-completed
+      failed: r.saga.payment-failed
+  queue:
+    item-process: q.saga.item-process
+    feedback-process: q.saga.feedback-process
+    item:
+      created: q.item.created
+      liked: q.item.liked
+      unliked: q.item.unliked
+      deleted: q.item.deleted
+      viewed: q.item.viewed
+      updated: q.item.updated
+    payment:
+      item-boost: q.saga.item-payment-boost
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: reuse-hub
+    version: 1.0.0

@@ -1,0 +1,71 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: ${DATABASE_URL_TRANSACTION:jdbc:postgresql://localhost:5432/payment}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual # publisher-returns: message unacknowledged
+        concurrency: 2 # many consumers for one queue
+        max-concurrency: 10 # max number of consumers for one queue
+        prefetch: 5 # number of messages to prefetch
+        shutdown-timeout: 10s
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          max-interval: 10000ms
+          multiplier: 2.0
+        default-requeue-rejected: false # if false, message will be sent to dead-letter queue
+stripe:
+  api:
+    key: ${STRIPE_SECRET_KEY:sk_test_51SPKKuLAymzdE2Wa7msglovziVZq1DV1VMQ4iJLhGUK2frcGUuushd8SxS0yya3keIIOoTVLqyWYyQd7ZzHgpyZq009crDg9xh}
+  webhook:
+    secret: ${STRIPE_WEBHOOK_SECRET:whsec_98f9ee3cd4bfd769428deee53f7369066f80bbf6dbc0b71567c30950529a5c62}
+
+rabbitmq:
+  exchange:
+    notification: ex.notification
+    saga: ex.saga
+  routing-key:
+    saga:
+      payment-completed: r.saga.payment-completed
+      payment-failed: r.saga.payment-failed
+    notification: r.notification.send
+    transaction: r.transaction.cancelled
+  queue:
+    saga:
+      payment-refund: q.saga.payment-refund
+      payment-completed: q.saga.payment-completed
+      payment-failed: q.saga.payment-failed
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: payment-service
+    version: 1.0.0

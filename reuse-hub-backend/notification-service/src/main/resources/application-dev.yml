@@ -1,0 +1,62 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  data:
+    mongodb:
+      uri: mongodb+srv://${USERNAME_MONGODB:username}:${PASSWORD_MONGODB:kTb9kz3920NL7ujc}@notification.r5yjzv0.mongodb.net/?appName=notification
+      database: notification
+
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual # publisher-returns: message unacknowledged
+        concurrency: 2 # many consumers for one queue
+        max-concurrency: 10 # max number of consumers for one queue
+        prefetch: 5 # number of messages to prefetch
+        shutdown-timeout: 10s
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          max-interval: 10000ms
+          multiplier: 2.0
+        default-requeue-rejected: false # if false, message will be sent to dead-letter queue
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:mailcv098@gmail.com}
+    password: ${MAIL_PASSWORD:wiaqhttcemgcnebx}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+rabbitmq:
+  queue:
+    notification: q.notification
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: notification-service
+    version: 1.0.0

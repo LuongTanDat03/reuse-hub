@@ -1,0 +1,85 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/profile}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        spatial:
+          dialect: org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual # publisher-returns: message unacknowledged
+        concurrency: 2 # many consumers for one queue
+        max-concurrency: 10 # max number of consumers for one queue
+        prefetch: 5 # number of messages to prefetch
+        shutdown-timeout: 10s
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          max-interval: 10000ms
+          multiplier: 2.0
+        default-requeue-rejected: false # if false, message will be sent to dead-letter queue
+
+supabase:
+  url: ${SUPABASE_URL:https://gpkseonjcemtkylobsfq.supabase.co}
+  service-key: ${SUPABASE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdwa3Nlb25qY2VtdGt5bG9ic2ZxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTYxODE3MSwiZXhwIjoyMDc1MTk0MTcxfQ.XBZiLqY1BYPi27ZCpZ6GRkC3G8ZGkT63B1iMy0klxe8}
+  bucket: ${SUPABASE_BUCKET:upload-images}
+  public-url: ${SUPABASE_PUBLIC_URL:https://gpkseonjcemtkylobsfq.storage.supabase.co/storage/v1/object/public}
+
+file:
+  upload:
+    max-size: ${FILE_MAX_SIZE:50}
+    allowed-types: image/jpeg,image/png,image/gif,image/webp
+    max-images: ${MAX_IMAGES:10}
+    image:
+      max-width: ${IMAGE_MAX_WIDTH:1920}
+      max-height: ${IMAGE_MAX_HEIGHT:1080}
+      thumbnail-size: ${THUMBNAIL_WIDTH:300}
+      compress-quality: ${COMPRESS_QUALITY:0.8}
+
+avatar:
+  default: https://i.ibb.co/mrL8wYRs/default.jpg
+
+rabbitmq:
+  queues:
+    user-profile-creation: q.profile.create
+    wallet:
+      credit: q.wallet.credit
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: profile-service
+    version: 1.0.0

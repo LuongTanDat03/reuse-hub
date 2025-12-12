@@ -1,0 +1,54 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual # publisher-returns: message unacknowledged
+        concurrency: 2 # many consumers for one queue
+        max-concurrency: 10 # max number of consumers for one queue
+        prefetch: 5 # number of messages to prefetch
+        shutdown-timeout: 10s
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          max-interval: 10000ms
+          multiplier: 2.0
+        default-requeue-rejected: false # if false, message will be sent to dead-letter queue
+
+google:
+  ai:
+    api-key: ${GOOGLE_API_KEY}
+    model: ${GOOGLE_MODEL:gemini-2.5-flash-lite}
+
+rabbitmq:
+  queue:
+    ai-scan: q.saga.ai-scan
+
+feign:
+  client:
+    config:
+      item-service:
+        url: "http://localhost:8083/items"
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+openapi:
+  service:
+    api-docs: reuse-hub-api-docs
+    server: ${BACKEND_SERVICE:http://localhost:${server.port}}
+    title: reuse-hub
+    version: 1.0.0

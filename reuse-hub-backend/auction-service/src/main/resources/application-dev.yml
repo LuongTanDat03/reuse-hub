@@ -1,0 +1,69 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: ${DATABASE_URL_AUCTION:jdbc:postgresql://localhost:5432/auction}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+rabbitmq:
+  exchange:
+    auction: ex.auction
+    notification: ex.notification
+  routing-key:
+    auction:
+      created: r.auction.created
+      bid-placed: r.auction.bid.placed
+      outbid: r.auction.outbid
+      ended: r.auction.ended
+      won: r.auction.won
+    notification:
+      auction: r.notification.auction
+  queue:
+    auction:
+      created: q.auction.created
+      bid-placed: q.auction.bid.placed
+      outbid: q.auction.outbid
+      ended: q.auction.ended
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+supabase:
+  url: ${SUPABASE_URL:https://yrtipbmujtikijomslgm.supabase.co}
+  service-key: ${SUPABASE_SERVICE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlydGlwYm11anRpa2lqb21zbGdtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDUxODkxNiwiZXhwIjoyMDc2MDk0OTE2fQ.bnwZxeVsIJWhkRyL7K9usaDkjmsp088EYf_ap0DVJhM}
+  bucket: ${SUPABASE_BUCKET:upload-images}
+  public-url: ${SUPABASE_PUBLIC_URL:https://yrtipbmujtikijomslgm.supabase.co/storage/v1/object/public}
+file:
+  upload:
+    max-size: 10
+    max-images: 8
+    allowed-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+      - image/gif
