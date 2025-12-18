@@ -5,7 +5,7 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb+srv://${USERNAME_MONGODB:username}:${PASSWORD_MONGODB:kTb9kz3920NL7ujc}@notification.r5yjzv0.mongodb.net/?appName=notification
+      uri: mongodb+srv://${MONGODB_USERNAME_NOTIFICATION:username}:${MONGODB_PASSWORD_NOTIFICATION:kTb9kz3920NL7ujc}@notification.r5yjzv0.mongodb.net/?appName=notification
       database: notification
 
   jackson:
@@ -35,8 +35,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:mailcv098@gmail.com}
-    password: ${MAIL_PASSWORD:wiaqhttcemgcnebx}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:

@@ -51,9 +51,8 @@ export default function ChatPage() {
     }
   };
 
-  const handleConversationClick = (otherUserId: string, itemId?: string) => {
-    const url = itemId ? `/chat/${otherUserId}?itemId=${itemId}` : `/chat/${otherUserId}`;
-    navigate(url);
+  const handleConversationClick = (conversationId: string) => {
+    navigate(`/chat/room/${conversationId}`);
   };
 
   const getOtherParticipant = (room: typeof currentRoom) => {
@@ -108,7 +107,7 @@ export default function ChatPage() {
                 return (
                   <button
                     key={room.id}
-                    onClick={() => handleConversationClick(other?.id || '', room.itemId)}
+                    onClick={() => handleConversationClick(room.id)}
                     className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 border-b ${
                       room.id === roomId ? 'bg-blue-50' : ''
                     }`}

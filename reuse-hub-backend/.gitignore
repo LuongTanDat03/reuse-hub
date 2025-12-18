@@ -68,25 +68,3 @@ credentials/
 # Backup files
 *.bak
 *.backup
-backups/
-
-# Docker volumes data
-postgres_data/
-neo4j_data/
-redis_data/
-rabbitmq_data/
-
-# Nginx logs
-nginx/logs/
-nginx_logs/
-
-# SSL certificates
-*.pem
-*.crt
-*.key
-ssl/
-
-# Local environment files
-.env
-.env.local
-.env.*.local

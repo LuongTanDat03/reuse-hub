@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Phone, MapPin, Calendar, Edit3, Save, X } from "lucide-react";
+import { User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, Shield, CheckCircle } from "lucide-react";
 import { getProfile, updateProfile } from "../../api/profile";
 import { ProfileResponse, ProfileUpdateRequest } from "../../types/api";
 import { toast } from "sonner";
@@ -559,6 +559,51 @@ export const ProfilePage = (): JSX.Element => {
                 <span className="text-white font-bold text-lg">{formatDate(profileData.joinDate)}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* KYC Verification Card */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-6 border border-white/20 mt-6">
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+            <Shield className="w-5 h-5 mr-2 text-yellow-400" />
+            Xác minh danh tính (KYC)
+          </h2>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {(profileData as any).kycStatus === 'APPROVED' ? (
+                <>
+                  <CheckCircle className="w-8 h-8 text-green-400" />
+                  <div>
+                    <p className="text-white font-medium">Đã xác minh</p>
+                    <p className="text-green-300 text-sm">Tài khoản của bạn đã được xác minh</p>
+                  </div>
+                </>
+              ) : (profileData as any).kycStatus === 'PENDING' ? (
+                <>
+                  <Shield className="w-8 h-8 text-yellow-400" />
+                  <div>
+                    <p className="text-white font-medium">Đang chờ xét duyệt</p>
+                    <p className="text-yellow-300 text-sm">Yêu cầu xác minh đang được xem xét</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Shield className="w-8 h-8 text-gray-400" />
+                  <div>
+                    <p className="text-white font-medium">Chưa xác minh</p>
+                    <p className="text-blue-200 text-sm">Xác minh để tăng độ tin cậy</p>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <Button
+              onClick={() => navigate('/kyc')}
+              className="bg-[#ffc204] text-black hover:bg-[#ffc204]/90 border-[3px] border-[#214d8c]"
+            >
+              {(profileData as any).kycStatus === 'APPROVED' ? 'Xem chi tiết' : 'Xác minh ngay'}
+            </Button>
           </div>
         </div>
 

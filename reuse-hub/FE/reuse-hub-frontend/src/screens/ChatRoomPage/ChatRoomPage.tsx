@@ -1,8 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Tag } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChat } from '../../hooks/useChat';
-import { getOtherParticipant, formatMessageTime } from '../../api/chat';
+import { getOtherParticipant, formatMessageTime, MessageType } from '../../api/chat';
+import { formatPrice } from '../../api/item';
+import { createTransaction } from '../../api/transaction';
+import { PriceOfferCard } from '../../components/Chat/PriceOfferCard';
+import { PriceOfferInput } from '../../components/Chat/PriceOfferInput';
 
 const ChatRoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -23,10 +29,15 @@ const ChatRoomPage: React.FC = () => {
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showPriceOffer, setShowPriceOffer] = useState(false);
+  const [counterOfferId, setCounterOfferId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const otherUser = currentRoom && user ? getOtherParticipant(currentRoom, user.id) : null;
+  
+  // Determine if current user is the seller (owner of the item)
+  const isSeller = currentRoom?.itemOwnerId === user?.id;
 
   const handleSend = async () => {
     if ((!messageText.trim() && !selectedFile) || sending) return;
@@ -42,6 +53,108 @@ const ChatRoomPage: React.FC = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleSendPriceOffer = async (price: number) => {
+    if (!currentRoom?.itemId || sending) return;
+
+    try {
+      setSending(true);
+      const messageType: MessageType = counterOfferId ? 'OFFER_COUNTERED' : 'PRICE_OFFER';
+      await sendMessage(`Đề xuất giá: ${price.toLocaleString('vi-VN')}đ`, undefined, {
+        messageType,
+        offerPrice: price,
+        itemId: currentRoom.itemId,
+        itemTitle: currentRoom.itemTitle,
+        itemThumbnail: currentRoom.itemThumbnail,
+        originalPrice: currentRoom.itemPrice || 0,
+        relatedOfferId: counterOfferId || undefined,
+      });
+      setShowPriceOffer(false);
+      setCounterOfferId(null);
+    } catch (error) {
+      console.error('Failed to send price offer:', error);
+      alert('Không thể gửi đề xuất giá');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleAcceptOffer = async (offerId: string, offerPrice: number) => {
+    if (sending) return;
+
+    try {
+      setSending(true);
+      await sendMessage(`Đã chấp nhận giá: ${offerPrice.toLocaleString('vi-VN')}đ`, undefined, {
+        messageType: 'OFFER_ACCEPTED',
+        offerPrice,
+        relatedOfferId: offerId,
+        itemId: currentRoom?.itemId,
+        itemTitle: currentRoom?.itemTitle,
+        itemThumbnail: currentRoom?.itemThumbnail,
+      });
+    } catch (error) {
+      console.error('Failed to accept offer:', error);
+      alert('Không thể chấp nhận đề xuất');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleRejectOffer = async (offerId: string) => {
+    if (sending) return;
+
+    try {
+      setSending(true);
+      await sendMessage('Đã từ chối đề xuất giá', undefined, {
+        messageType: 'OFFER_REJECTED',
+        relatedOfferId: offerId,
+        itemId: currentRoom?.itemId,
+      });
+    } catch (error) {
+      console.error('Failed to reject offer:', error);
+      alert('Không thể từ chối đề xuất');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleCounterOffer = (offerId: string) => {
+    setCounterOfferId(offerId);
+    setShowPriceOffer(true);
+  };
+
+  const handleBuyNow = async (offerPrice: number, itemId: string) => {
+    if (!user || sending) return;
+
+    console.log('=== handleBuyNow ===');
+    console.log('offerPrice (giá thương lượng):', offerPrice);
+    console.log('itemId:', itemId);
+
+    try {
+      setSending(true);
+      const txRequest = {
+        itemId,
+        transactionType: 'SALE' as const,
+        quantity: 1,
+        price: offerPrice, // Giá đã thương lượng
+        deliveryMethod: 'DELIVERY' as const,
+      };
+
+      console.log('Creating transaction with request:', txRequest);
+      await createTransaction(user.id, txRequest);
+      toast.success('Đã tạo giao dịch thành công với giá thương lượng!');
+      navigate('/transactions');
+    } catch (error) {
+      console.error('Failed to create transaction:', error);
+      toast.error('Không thể tạo giao dịch');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const isPriceOfferMessage = (type: MessageType) => {
+    return ['PRICE_OFFER', 'OFFER_ACCEPTED', 'OFFER_REJECTED', 'OFFER_COUNTERED'].includes(type);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -146,7 +259,13 @@ const ChatRoomPage: React.FC = () => {
               )}
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{currentRoom.itemTitle || 'Sản phẩm'}</div>
-                <div className="text-xs text-gray-500">Sản phẩm đang trao đổi</div>
+                {currentRoom.itemPrice && currentRoom.itemPrice > 0 ? (
+                  <div className="text-sm font-semibold text-red-600">
+                    {formatPrice(currentRoom.itemPrice)}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500">Sản phẩm đang trao đổi</div>
+                )}
               </div>
               <button
                 onClick={() => navigate(`/product/${currentRoom.itemId}`)}
@@ -193,6 +312,7 @@ const ChatRoomPage: React.FC = () => {
             
             {messages.map((message) => {
               const isSent = message.senderId === user?.id;
+              const isPriceOffer = isPriceOfferMessage(message.type);
               
               return (
                 <div
@@ -200,35 +320,53 @@ const ChatRoomPage: React.FC = () => {
                   className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
                 >
                   <div className={`max-w-[70%] ${isSent ? 'order-2' : 'order-1'}`}>
-                    <div
-                      className={`rounded-lg px-4 py-2 ${
-                        isSent
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-900 border'
-                      }`}
-                    >
-                      {message.type === 'IMAGE' && message.fileUrl ? (
-                        <img
-                          src={message.fileUrl}
-                          alt="Attachment"
-                          className="max-w-full rounded mb-2"
-                        />
-                      ) : message.type === 'FILE' && message.fileUrl ? (
-                        <a
-                          href={message.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 underline"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          Tải xuống file
-                        </a>
-                      ) : null}
-                      
-                      <p className="whitespace-pre-wrap break-words">{message.content}</p>
-                    </div>
+                    {/* Price Offer Card - show if type is price offer, even if offerPrice is missing */}
+                    {isPriceOffer ? (
+                      <PriceOfferCard
+                        offerPrice={message.offerPrice || 0}
+                        originalPrice={message.originalPrice}
+                        offerStatus={message.offerStatus}
+                        messageType={message.type}
+                        itemTitle={message.itemTitle}
+                        itemThumbnail={message.itemThumbnail}
+                        isSender={isSent}
+                        isSeller={isSeller}
+                        onAccept={() => handleAcceptOffer(message.id, message.offerPrice!)}
+                        onReject={() => handleRejectOffer(message.id)}
+                        onCounter={() => handleCounterOffer(message.id)}
+                        onBuyNow={() => handleBuyNow(message.offerPrice!, message.itemId || currentRoom?.itemId || '')}
+                      />
+                    ) : (
+                      <div
+                        className={`rounded-lg px-4 py-2 ${
+                          isSent
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-900 border'
+                        }`}
+                      >
+                        {message.type === 'IMAGE' && message.fileUrl ? (
+                          <img
+                            src={message.fileUrl}
+                            alt="Attachment"
+                            className="max-w-full rounded mb-2"
+                          />
+                        ) : message.type === 'FILE' && message.fileUrl ? (
+                          <a
+                            href={message.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 underline"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Tải xuống file
+                          </a>
+                        ) : null}
+                        
+                        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                      </div>
+                    )}
                     <p
                       className={`text-xs text-gray-500 mt-1 ${
                         isSent ? 'text-right' : 'text-left'
@@ -245,69 +383,100 @@ const ChatRoomPage: React.FC = () => {
         )}
       </div>
 
+      {/* Price Offer Input */}
+      {showPriceOffer && currentRoom?.itemId && (
+        <div className="bg-white border-t p-4">
+          <PriceOfferInput
+            itemTitle={currentRoom.itemTitle || 'Sản phẩm'}
+            itemThumbnail={currentRoom.itemThumbnail}
+            originalPrice={currentRoom.itemPrice || 0}
+            onSendOffer={handleSendPriceOffer}
+            onCancel={() => {
+              setShowPriceOffer(false);
+              setCounterOfferId(null);
+            }}
+            isCounter={!!counterOfferId}
+          />
+        </div>
+      )}
+
       {/* Input */}
-      <div className="bg-white border-t p-4">
-        {selectedFile && (
-          <div className="mb-2 flex items-center gap-2 p-2 bg-gray-100 rounded">
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-            <span className="text-sm text-gray-700 flex-1">{selectedFile.name}</span>
+      {!showPriceOffer && (
+        <div className="bg-white border-t p-4">
+          {selectedFile && (
+            <div className="mb-2 flex items-center gap-2 p-2 bg-gray-100 rounded">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+              <span className="text-sm text-gray-700 flex-1">{selectedFile.name}</span>
+              <button
+                onClick={() => setSelectedFile(null)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+          
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileSelect}
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx"
+            />
+            
             <button
-              onClick={() => setSelectedFile(null)}
-              className="text-red-500 hover:text-red-700"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-3 hover:bg-gray-100 rounded-lg"
+              disabled={sending}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
               </svg>
             </button>
-          </div>
-        )}
-        
-        <div className="flex gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            onChange={handleFileSelect}
-            className="hidden"
-            accept="image/*,.pdf,.doc,.docx"
-          />
-          
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="p-3 hover:bg-gray-100 rounded-lg"
-            disabled={sending}
-          >
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-          </button>
 
-          <input
-            type="text"
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Nhập tin nhắn..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={sending}
-          />
-
-          <button
-            onClick={handleSend}
-            disabled={(!messageText.trim() && !selectedFile) || sending || !isConnected}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {sending ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
+            {/* Price offer button - only show if there's an item */}
+            {currentRoom?.itemId && !isSeller && (
+              <button
+                onClick={() => setShowPriceOffer(true)}
+                className="p-3 hover:bg-blue-50 rounded-lg text-blue-600"
+                disabled={sending}
+                title="Trả giá"
+              >
+                <Tag className="w-6 h-6" />
+              </button>
             )}
-          </button>
+
+            <input
+              type="text"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Nhập tin nhắn..."
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={sending}
+            />
+
+            <button
+              onClick={handleSend}
+              disabled={(!messageText.trim() && !selectedFile) || sending || !isConnected}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

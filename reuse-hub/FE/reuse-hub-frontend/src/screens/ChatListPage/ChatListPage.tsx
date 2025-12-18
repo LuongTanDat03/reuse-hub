@@ -10,7 +10,7 @@ const ChatListPage: React.FC = () => {
   const { rooms, loading } = useChat();
 
   const handleRoomClick = (roomId: string) => {
-    navigate(`/chat/${roomId}`);
+    navigate(`/chat/room/${roomId}`);
   };
 
   return (
@@ -82,6 +82,22 @@ const ChatListPage: React.FC = () => {
                           </span>
                         )}
                       </div>
+                      
+                      {/* Item info if available */}
+                      {room.itemId && (
+                        <div className="flex items-center gap-2 mb-1">
+                          {room.itemThumbnail && (
+                            <img 
+                              src={room.itemThumbnail} 
+                              alt={room.itemTitle || 'Product'}
+                              className="w-8 h-8 rounded object-cover"
+                            />
+                          )}
+                          <span className="text-xs text-blue-600 truncate">
+                            {room.itemTitle || 'Sản phẩm'}
+                          </span>
+                        </div>
+                      )}
                       
                       <div className="flex justify-between items-center">
                         <p className="text-sm text-gray-600 truncate">

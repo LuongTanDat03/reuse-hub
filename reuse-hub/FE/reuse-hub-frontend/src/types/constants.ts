@@ -10,7 +10,8 @@ export const API_ENDPOINTS = {
   PROFILE: '/profile',
   ITEMS: '/items',
   CHATS: '/chats',
-  PAYMENTS: '/payments'
+  PAYMENTS: '/payments',
+  AUCTIONS: '/auction/auctions'
 } as const;
 
 export const HTTP_STATUS = {

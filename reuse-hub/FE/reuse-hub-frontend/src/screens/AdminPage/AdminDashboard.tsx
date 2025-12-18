@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Users, Package, ShoppingCart, TrendingUp, Ban, CheckCircle, Trash2, Key, Filter, Wallet } from 'lucide-react';
+import { Users, Package, ShoppingCart, TrendingUp, Ban, CheckCircle, Trash2, Key, Filter, Wallet, Shield } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import {
   getAllUsers,
@@ -14,8 +14,10 @@ import {
   DashboardTransactionResponse,
 } from '../../api/admin';
 import { getAllCategories } from '../../api/item';
+import { ModerationPage } from './ModerationPage';
+import { KycManagementPage } from './KycManagementPage';
 
-type TabType = 'users' | 'items' | 'transactions';
+type TabType = 'users' | 'items' | 'transactions' | 'moderation' | 'kyc';
 
 export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<TabType>('users');
@@ -172,19 +174,7 @@ export const AdminDashboard = () => {
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
               <p className="text-gray-600">Quản lý người dùng, sản phẩm và giao dịch</p>
-            </div>
-            {/* Total Wallet Balance Card */}
-            <div className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl shadow-lg p-6 min-w-[280px]">
-              <div className="flex items-center gap-4">
-                <div className="bg-white/20 p-3 rounded-lg">
-                  <Wallet className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <p className="text-white/80 text-sm font-medium">Tổng số tiền trong ví</p>
-                  <p className="text-2xl font-bold text-white">{formatCurrency(totalWallet)}</p>
-                </div>
-              </div>
-            </div>
+            </div>  
           </div>
         </div>
 
@@ -222,6 +212,28 @@ export const AdminDashboard = () => {
           >
             <ShoppingCart className="w-5 h-5 inline mr-2" />
             Giao dịch
+          </button>
+          <button
+            onClick={() => setActiveTab('moderation')}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === 'moderation'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Shield className="w-5 h-5 inline mr-2" />
+            Kiểm duyệt
+          </button>
+          <button
+            onClick={() => setActiveTab('kyc')}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === 'kyc'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Shield className="w-5 h-5 inline mr-2" />
+            Xác minh KYC
           </button>
         </div>
 
@@ -270,6 +282,7 @@ export const AdminDashboard = () => {
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Phone</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Họ tên</th>
+                          <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Ví</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
                           <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Actions</th>
                         </tr>
@@ -289,6 +302,11 @@ export const AdminDashboard = () => {
                             <td className="px-6 py-4 text-sm text-gray-600">{user.phone}</td>
                             <td className="px-6 py-4 text-sm text-gray-600">
                               {user.firstName} {user.lastName}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className="text-sm font-semibold text-green-600">
+                                {formatCurrency(user.wallet || 0)}
+                              </span>
                             </td>
                             <td className="px-6 py-4">
                               <span className={`px-2 py-1 text-xs rounded-full ${
@@ -536,6 +554,16 @@ export const AdminDashboard = () => {
                 </div>
                 )}
               </div>
+            )}
+
+            {/* Moderation Tab */}
+            {activeTab === 'moderation' && (
+              <ModerationPage />
+            )}
+
+            {/* KYC Tab */}
+            {activeTab === 'kyc' && (
+              <KycManagementPage />
             )}
 
             {/* Transactions Tab */}

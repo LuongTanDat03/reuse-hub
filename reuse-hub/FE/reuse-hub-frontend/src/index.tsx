@@ -20,13 +20,21 @@ import { Layout } from "./components/Layout";
 import RequireAuth from "./components/RequireAuth";
 import MapPage from "./screens/MapPage/MapPage";
 import ChatPage from "./screens/ChatPage/ChatPage";
+import ChatListPage from "./screens/ChatListPage/ChatListPage";
+import ChatRoomPage from "./screens/ChatRoomPage/ChatRoomPage";
 import PostCreatePage from "./screens/PostCreatePage/PostCreatePage";
-import { AdminPage } from "./screens/AdminPage/AdminPage";
 import { AdminDashboard } from "./screens/AdminPage/AdminDashboard";
 import { TransactionManagementPage } from "./screens/TransactionManagementPage/TransactionManagementPage";
 import MyPosts from "./screens/MyPosts/MyPosts";
 import { PaymentPage } from "./screens/PaymentPage";
 import { PaymentSuccessPage } from "./screens/PaymentSuccessPage";
+import { AuctionListPage } from "./screens/AuctionListPage/AuctionListPage";
+import { AuctionDetailPage } from "./screens/AuctionDetailPage/AuctionDetailPage";
+import { CreateAuctionPage } from "./screens/CreateAuctionPage/CreateAuctionPage";
+import { MyAuctionsPage } from "./screens/MyAuctionsPage/MyAuctionsPage";
+import { ModerationPage } from "./screens/AdminPage/ModerationPage";
+import { MyReportsPage } from "./screens/MyReportsPage/MyReportsPage";
+import { KycPage } from "./screens/KycPage/KycPage";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -49,14 +57,6 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/search" element={<CategoryPage />} />
           <Route path="/product/:productId" element={<ProductDetailPage />} />
           <Route
-            path="/admin"
-            element={
-              <RequireAuth>
-                <AdminPage />
-              </RequireAuth>
-            }
-          />
-          <Route
             path="/admin/dashboard"
             element={
               <RequireAuth>
@@ -65,7 +65,10 @@ createRoot(document.getElementById("app") as HTMLElement).render(
             }
           />
           <Route path="/map" element={<Layout><MapPage /></Layout>} />
-          <Route path="/chat/:targetUserId" element={<ChatPage />} />
+          {/* Chat routes */}
+          <Route path="/chat" element={<RequireAuth><ChatListPage /></RequireAuth>} />
+          <Route path="/chat/room/:roomId" element={<RequireAuth><ChatRoomPage /></RequireAuth>} />
+          <Route path="/chat/user/:targetUserId" element={<RequireAuth><ChatPage /></RequireAuth>} />
           <Route
             path="/dang-tin"
             element={
@@ -105,6 +108,51 @@ createRoot(document.getElementById("app") as HTMLElement).render(
             }
           />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
+          {/* Auction Routes */}
+          <Route path="/auctions" element={<AuctionListPage />} />
+          <Route path="/auction/:auctionId" element={<AuctionDetailPage />} />
+          <Route
+            path="/auction/create"
+            element={
+              <RequireAuth>
+                <CreateAuctionPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/my-auctions"
+            element={
+              <RequireAuth>
+                <MyAuctionsPage />
+              </RequireAuth>
+            }
+          />
+          {/* Moderation Routes */}
+          <Route
+            path="/admin/moderation"
+            element={
+              <RequireAuth>
+                <ModerationPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/my-reports"
+            element={
+              <RequireAuth>
+                <MyReportsPage />
+              </RequireAuth>
+            }
+          />
+          {/* KYC Route */}
+          <Route
+            path="/kyc"
+            element={
+              <RequireAuth>
+                <KycPage />
+              </RequireAuth>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -28,7 +28,7 @@ spring:
 google:
   ai:
     api-key: ${GOOGLE_API_KEY}
-    model: ${GOOGLE_MODEL:gemini-2.5-flash-lite}
+    model: ${GOOGLE_MODEL}
 
 rabbitmq:
   queue:

@@ -1,4 +1,4 @@
-import { User, LogOut, PlusCircle, MessageCircle, ShoppingBag, Package, Map, Wallet } from "lucide-react";
+import { User, LogOut, PlusCircle, MessageCircle, ShoppingBag, Package, Map, Wallet, Gavel } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../contexts/AuthContext";
@@ -82,6 +82,14 @@ export const Header = (): JSX.Element => {
                   <Map className="w-5 h-5 mr-2" />
                   <span>Map</span>
                 </Button>
+                <Button
+                  onClick={() => navigate('/auctions')}
+                  className="h-11 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-2 border-purple-300 rounded-xl shadow-md hover:shadow-lg transition-all font-semibold"
+                  title="Đấu giá"
+                >
+                  <Gavel className="w-5 h-5 mr-2" />
+                  <span>Đấu giá</span>
+                </Button>
             {user && (
               <>
                 {/* Giao dịch Button */}
@@ -102,6 +110,16 @@ export const Header = (): JSX.Element => {
                 >
                   <Package className="w-5 h-5 mr-2" />
                   <span>Quản lý tin</span>
+                </Button>
+
+                {/* Quản lý đấu giá Button */}
+                <Button
+                  onClick={() => navigate('/my-auctions')}
+                  className="h-11 px-4 bg-white/90 hover:bg-white text-gray-800 border-2 border-white rounded-xl shadow-md hover:shadow-lg transition-all font-semibold"
+                  title="Quản lý đấu giá"
+                >
+                  <Gavel className="w-5 h-5 mr-2" />
+                  <span>Đấu giá của tôi</span>
                 </Button>
 
                 {/* Đăng tin Button */}

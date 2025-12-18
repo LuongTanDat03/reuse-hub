@@ -18,7 +18,21 @@ export interface ConversationResponse {
   itemId?: string;
   itemTitle?: string;
   itemThumbnail?: string;
+  itemPrice?: number;
+  itemOwnerId?: string;
 }
+
+export type MessageType = 
+  | 'TEXT' 
+  | 'IMAGE' 
+  | 'FILE' 
+  | 'SYSTEM'
+  | 'PRICE_OFFER'
+  | 'OFFER_ACCEPTED'
+  | 'OFFER_REJECTED'
+  | 'OFFER_COUNTERED';
+
+export type OfferStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COUNTERED';
 
 export interface MessageResponse {
   id: string;
@@ -28,16 +42,33 @@ export interface MessageResponse {
   content: string;
   media?: string[];
   status: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM';
+  type: MessageType;
   reactions?: Record<string, string[]>;
   createdAt: string;
   updatedAt: string;
+  // Price offer fields
+  offerPrice?: number;
+  offerStatus?: OfferStatus;
+  relatedOfferId?: string;
+  itemId?: string;
+  itemTitle?: string;
+  itemThumbnail?: string;
+  originalPrice?: number;
 }
 
 export interface SendMessageRequest {
   senderId: string;
   recipientId: string;
   content: string;
+  conversationId?: string;
+  messageType?: MessageType;
+  // Price offer fields
+  offerPrice?: number;
+  relatedOfferId?: string;
+  itemId?: string;
+  itemTitle?: string;
+  itemThumbnail?: string;
+  originalPrice?: number;
 }
 
 // Legacy types for backward compatibility
@@ -52,12 +83,16 @@ export interface ChatRoom extends ConversationResponse {
   lastMessageTime?: string;
   unreadCount: number;
   createdAt: string;
+  // Item info (inherited from ConversationResponse but explicitly listed)
+  itemId?: string;
+  itemTitle?: string;
+  itemThumbnail?: string;
+  itemPrice?: number;
 }
 
 export interface ChatMessage extends MessageResponse {
   roomId: string;
   senderName: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE';
   fileUrl?: string;
   isRead: boolean;
 }
@@ -184,6 +219,11 @@ export const getChatRooms = async (
       lastMessageTime: conv.lastMessageTimestamp,
       unreadCount: 0,
       createdAt: conv.lastMessageTimestamp || new Date().toISOString(),
+      // Item info
+      itemId: conv.itemId,
+      itemTitle: conv.itemTitle,
+      itemThumbnail: conv.itemThumbnail,
+      itemPrice: conv.itemPrice,
     }));
     return {
       ...response,
@@ -196,37 +236,48 @@ export const getChatRooms = async (
   return response as any;
 };
 
+export const getConversationById = async (
+  userId: string,
+  conversationId: string
+): Promise<ApiResponse<ConversationResponse>> => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/chats/conservations/${conversationId}`,
+      { headers: getAuthHeaders(userId) }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Get conversation by id error:', error);
+    throw error;
+  }
+};
+
 export const getChatRoom = async (
   userId: string,
   conversationId: string
 ): Promise<ApiResponse<ChatRoom>> => {
-  // This would need to be implemented if backend supports getting single conversation by ID
-  // For now, we can get it from the list
-  const response = await getMyConversations(userId, 0, 100);
-  if (response.data && 'content' in response.data) {
-    const conversations = response.data.content as ConversationResponse[];
-    const conv = conversations.find(c => c.id === conversationId);
-    if (conv) {
-      const chatRoom: ChatRoom = {
-        ...conv,
-        participant1Id: conv.participantIds[0] || '',
-        participant2Id: conv.participantIds[1] || '',
-        participant1Name: conv.otherParticipantName || '',
-        participant2Name: conv.otherParticipantName || '',
-        participant1Avatar: conv.otherParticipantAvatar,
-        participant2Avatar: conv.otherParticipantAvatar,
-        lastMessage: '',
-        lastMessageTime: conv.lastMessageTimestamp,
-        unreadCount: 0,
-        createdAt: conv.lastMessageTimestamp || new Date().toISOString(),
-      };
-      return {
-        status: 200,
-        message: 'Success',
-        data: chatRoom,
-        timestamp: new Date().toISOString()
-      };
-    }
+  const response = await getConversationById(userId, conversationId);
+  if (response.data) {
+    const conv = response.data;
+    const chatRoom: ChatRoom = {
+      ...conv,
+      participant1Id: conv.participantIds[0] || '',
+      participant2Id: conv.participantIds[1] || '',
+      participant1Name: conv.otherParticipantName || '',
+      participant2Name: conv.otherParticipantName || '',
+      participant1Avatar: conv.otherParticipantAvatar,
+      participant2Avatar: conv.otherParticipantAvatar,
+      lastMessage: '',
+      lastMessageTime: conv.lastMessageTimestamp,
+      unreadCount: 0,
+      createdAt: conv.lastMessageTimestamp || new Date().toISOString(),
+    };
+    return {
+      status: 200,
+      message: 'Success',
+      data: chatRoom,
+      timestamp: new Date().toISOString()
+    };
   }
   throw new Error('Conversation not found');
 };

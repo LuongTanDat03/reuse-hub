@@ -21,11 +21,13 @@ import {
   formatPrice,
   getAllItems
 } from "../../api/item";
-import { ItemResponse, ItemSummaryResponse } from "../../types/api";
+import { getProfile } from "../../api/profile";
+import { ItemResponse, ItemSummaryResponse, ProfileResponse } from "../../types/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { createTransaction } from "../../api/transaction";
 import { toast } from "sonner";
 import { Header } from "../Desktop/sections/Header/Header";
+import { ReportButton } from "../../components/Report/ReportButton";
 
 export const ProductDetailPage = (): JSX.Element => {
   const { productId } = useParams<{ productId: string }>();
@@ -34,6 +36,7 @@ export const ProductDetailPage = (): JSX.Element => {
   
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [item, setItem] = useState<ItemResponse | null>(null);
+  const [seller, setSeller] = useState<ProfileResponse | null>(null);
   const [relatedItems, setRelatedItems] = useState<ItemSummaryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [liking, setLiking] = useState(false);
@@ -48,6 +51,18 @@ export const ProductDetailPage = (): JSX.Element => {
       try {
         const response = await getItemById(productId, user.id);
         setItem(response.data);
+        
+        // Load seller profile
+        if (response.data.userId) {
+          try {
+            const sellerResponse = await getProfile(response.data.userId);
+            if (sellerResponse.status === 200 && sellerResponse.data) {
+              setSeller(sellerResponse.data);
+            }
+          } catch (err) {
+            console.error("Error loading seller profile:", err);
+          }
+        }
         
         // Load related items by category
         if (response.data.categorySlug) {
@@ -143,9 +158,9 @@ export const ProductDetailPage = (): JSX.Element => {
       // Create or get chat room with seller, include productId as itemId
       const response = await createOrGetChatRoom(user.id, item.userId, productId);
       
-      if (response.status === 200 && response.data) {
-        // Navigate to chat with seller userId and itemId as query param
-        navigate(`/chat/${item.userId}?itemId=${productId}`);
+      if (response.status === 200 || response.status === 201) {
+        // Navigate to chat room using conversation ID
+        navigate(`/chat/room/${response.data.id}`);
       }
     } catch (error) {
       console.error('Failed to create chat room:', error);
@@ -434,6 +449,15 @@ export const ProductDetailPage = (): JSX.Element => {
                       <Share2 className="w-5 h-5 mr-2" />
                       Chia sẻ
                     </Button>
+                    
+                    <ReportButton
+                      entityType="ITEM"
+                      entityId={item.id}
+                      reportedUserId={item.sellerId}
+                      entityTitle={item.title}
+                      variant="full"
+                      className="flex-1"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -443,14 +467,30 @@ export const ProductDetailPage = (): JSX.Element => {
             <Card>
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Thông tin người bán</h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-blue-600" />
+                <div 
+                  className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg -m-2 transition"
+                  onClick={() => navigate(`/profile/${item.userId}`)}
+                >
+                  {seller?.avatarUrl ? (
+                    <img 
+                      src={seller.avatarUrl} 
+                      alt={seller.firstName || 'Seller'}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-blue-600" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">
+                      {seller ? `${seller.firstName || ''} ${seller.lastName || ''}`.trim() || 'Người bán' : 'Đang tải...'}
+                    </div>
+                    {seller?.bio && (
+                      <div className="text-sm text-gray-500 line-clamp-1">{seller.bio}</div>
+                    )}
                   </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Người bán</div>
-                    <div className="text-sm text-gray-500">ID: {item.userId.slice(0, 8)}...</div>
-                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </CardContent>
             </Card>

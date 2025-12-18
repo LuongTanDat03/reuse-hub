@@ -26,12 +26,12 @@ spring:
         default-requeue-rejected: false # if false, message will be sent to dead-letter queue
 
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/identity}
+    url: ${DATABASE_URL_IDENTITY:jdbc:postgresql://localhost:5432/identity}
     username: ${DATABASE_USERNAME:postgres}
     password: ${DATABASE_PASSWORD:postgres}
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:

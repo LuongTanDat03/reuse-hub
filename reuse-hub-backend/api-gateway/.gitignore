@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Github-Secret ###
+api-gateway/src/main/resources/application-dev.yml

@@ -9,7 +9,7 @@ spring:
       max-request-size: 50MB
 
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/profile}
+    url: ${DATABASE_URL_PROFILE:jdbc:postgresql://localhost:5432/profile}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
   jpa:
@@ -46,10 +46,10 @@ spring:
         default-requeue-rejected: false # if false, message will be sent to dead-letter queue
 
 supabase:
-  url: ${SUPABASE_URL:https://gpkseonjcemtkylobsfq.supabase.co}
-  service-key: ${SUPABASE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdwa3Nlb25qY2VtdGt5bG9ic2ZxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTYxODE3MSwiZXhwIjoyMDc1MTk0MTcxfQ.XBZiLqY1BYPi27ZCpZ6GRkC3G8ZGkT63B1iMy0klxe8}
+  url: ${SUPABASE_URL_PROFILE}
+  service-key: ${SUPABASE_KEY_PROFILE}
   bucket: ${SUPABASE_BUCKET:upload-images}
-  public-url: ${SUPABASE_PUBLIC_URL:https://gpkseonjcemtkylobsfq.storage.supabase.co/storage/v1/object/public}
+  public-url: ${SUPABASE_PUBLIC_URL_PROFILE}
 
 file:
   upload:

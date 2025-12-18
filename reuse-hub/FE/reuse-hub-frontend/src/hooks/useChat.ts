@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as chatAPI from '../api/chat';
 import { ChatRoom, ChatMessage, MessageResponse } from '../api/chat';
+import { getItemById } from '../api/item';
 import { useAuth } from '../contexts/AuthContext';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -38,6 +39,7 @@ export const useChat = (conversationId?: string) => {
           try {
             const messageData: MessageResponse = JSON.parse(message.body);
             console.log('Received message:', messageData);
+            console.log('Message type:', messageData.type, 'offerPrice:', messageData.offerPrice);
             
             // Convert to ChatMessage format
             const chatMessage: ChatMessage = {
@@ -47,7 +49,7 @@ export const useChat = (conversationId?: string) => {
               type: messageData.type as any,
               isRead: messageData.status === 'READ',
             };
-            
+
             // Add message if it belongs to current conversation
             if (conversationId && messageData.conversationId === conversationId) {
               setMessages(prev => {
@@ -101,6 +103,7 @@ export const useChat = (conversationId?: string) => {
     };
   }, [user?.id, conversationId]);
 
+
   // Fetch chat rooms
   const fetchRooms = useCallback(async () => {
     if (!user?.id) return;
@@ -128,13 +131,34 @@ export const useChat = (conversationId?: string) => {
     try {
       const response = await chatAPI.getChatRoom(user.id, id);
       if (response.status === 200 && response.data) {
-        setCurrentRoom(response.data);
+        let room = response.data;
+        
+        // If room has itemId but missing item info, fetch from item service
+        if (room.itemId && (!room.itemPrice || room.itemPrice === 0 || !room.itemOwnerId)) {
+          try {
+            const itemResponse = await getItemById(room.itemId, user.id);
+            if (itemResponse.status === 200 && itemResponse.data) {
+              room = {
+                ...room,
+                itemPrice: itemResponse.data.price || room.itemPrice,
+                itemTitle: room.itemTitle || itemResponse.data.title,
+                itemThumbnail: room.itemThumbnail || (itemResponse.data.images?.[0] ?? undefined),
+                itemOwnerId: room.itemOwnerId || itemResponse.data.userId,
+              };
+            }
+          } catch (itemErr) {
+            console.warn('Could not fetch item info:', itemErr);
+          }
+        }
+        
+        setCurrentRoom(room);
       }
     } catch (err: any) {
       console.error('Failed to fetch chat room:', err);
       setError('Không thể tải phòng chat');
     }
   }, [user?.id]);
+
 
   // Fetch messages
   const fetchMessages = useCallback(async (id: string, pageNum: number = 0) => {
@@ -174,27 +198,39 @@ export const useChat = (conversationId?: string) => {
     }
   }, [user?.id]);
 
+
   // Send message via WebSocket
-  const sendMessage = useCallback(async (content: string, file?: File) => {
+  const sendMessage = useCallback(async (
+    content: string, 
+    file?: File,
+    offerData?: {
+      messageType: chatAPI.MessageType;
+      offerPrice?: number;
+      relatedOfferId?: string;
+      itemId?: string;
+      itemTitle?: string;
+      itemThumbnail?: string;
+      originalPrice?: number;
+    }
+  ) => {
     if (!user?.id || !currentRoom) return;
 
     try {
       if (file) {
-        // File upload not yet implemented
         throw new Error('File upload not yet implemented');
       } else {
-        // Check if WebSocket is connected
         if (!stompClientRef.current || !isConnected) {
           throw new Error('WebSocket not connected. Please wait...');
         }
 
-        // Get recipient ID (the other participant)
         const recipientId = currentRoom.otherParticipantId || 
           currentRoom.participantIds.find(id => id !== user.id) || '';
         
         if (!recipientId) {
           throw new Error('Cannot find recipient ID');
         }
+
+        const messageType = offerData?.messageType || 'TEXT';
 
         // Optimistically add message to UI
         const tempMessage: ChatMessage = {
@@ -205,22 +241,40 @@ export const useChat = (conversationId?: string) => {
           recipientId: recipientId,
           senderName: user.username || 'You',
           content,
-          type: 'TEXT',
+          type: messageType,
           status: 'SENT',
           isRead: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           reactions: {},
+          offerPrice: offerData?.offerPrice,
+          offerStatus: offerData?.messageType === 'PRICE_OFFER' || offerData?.messageType === 'OFFER_COUNTERED' ? 'PENDING' : undefined,
+          relatedOfferId: offerData?.relatedOfferId,
+          itemId: offerData?.itemId,
+          itemTitle: offerData?.itemTitle,
+          itemThumbnail: offerData?.itemThumbnail,
+          originalPrice: offerData?.originalPrice,
         };
         setMessages(prev => [...prev, tempMessage]);
         scrollToBottom();
 
+
         // Send via WebSocket
-        const messageRequest = {
+        const messageRequest: chatAPI.SendMessageRequest = {
           senderId: user.id,
           recipientId: recipientId,
           content: content,
+          conversationId: currentRoom.id,
+          messageType: messageType,
+          offerPrice: offerData?.offerPrice,
+          relatedOfferId: offerData?.relatedOfferId,
+          itemId: offerData?.itemId,
+          itemTitle: offerData?.itemTitle,
+          itemThumbnail: offerData?.itemThumbnail,
+          originalPrice: offerData?.originalPrice,
         };
+        
+        console.log('Sending message request:', messageRequest);
 
         stompClientRef.current.publish({
           destination: '/app/send-message',
@@ -240,8 +294,6 @@ export const useChat = (conversationId?: string) => {
 
     try {
       await chatAPI.markMessagesAsRead(user.id, id);
-      
-      // Update unread count in rooms
       setRooms(prev => prev.map(room => 
         room.id === id ? { ...room, unreadCount: 0 } : room
       ));
@@ -250,6 +302,7 @@ export const useChat = (conversationId?: string) => {
     }
   }, [user?.id]);
 
+
   // Create or get chat room
   const createOrGetRoom = useCallback(async (otherUserId: string, itemId?: string) => {
     if (!user?.id) return null;
@@ -257,20 +310,17 @@ export const useChat = (conversationId?: string) => {
     try {
       const response = await chatAPI.createOrGetChatRoom(user.id, otherUserId, itemId);
       if (response.status === 200 && response.data) {
-        // Add to rooms if not exists
         setRooms(prev => {
           const exists = prev.find(r => r.id === response.data!.id);
           if (exists) return prev;
           return [response.data!, ...prev];
         });
-        
         return response.data;
       }
     } catch (err: any) {
       console.error('Failed to create/get chat room:', err);
       setError('Không thể tạo phòng chat');
     }
-    
     return null;
   }, [user?.id]);
 

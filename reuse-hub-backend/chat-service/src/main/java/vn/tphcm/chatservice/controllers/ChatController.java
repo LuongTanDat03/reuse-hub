@@ -16,6 +16,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vn.tphcm.chatservice.dtos.ApiResponse;
 import vn.tphcm.chatservice.dtos.request.SendMessageRequest;
@@ -26,11 +29,35 @@ import vn.tphcm.chatservice.services.MessageService;
 import java.util.Map;
 
 @RestController
+@RequestMapping("/api/v1/chats")
 @RequiredArgsConstructor
 @Slf4j(topic = "CHAT-CONTROLLER")
 public class ChatController {
     private final MessageService messageService;
     private final SimpMessagingTemplate template;
+
+    /**
+     * REST endpoint for sending messages (fallback when WebSocket is not available)
+     */
+    @PostMapping("/messages/send")
+    public ApiResponse<MessageResponse> sendMessageRest(@RequestBody SendMessageRequest request) {
+        log.info("REST: Received message send request: {}", request);
+
+        ApiResponse<MessageResponse> messageResponse = messageService.sendMessage(request);
+        MessageResponse messageData = messageResponse.getData();
+
+        // Also broadcast via WebSocket for real-time updates
+        template.convertAndSend(
+                "/topic/messages/" + request.getRecipientId(),
+                messageData
+        );
+        template.convertAndSend(
+                "/topic/messages/" + request.getSenderId(),
+                messageData
+        );
+
+        return messageResponse;
+    }
 
     @MessageMapping("/send-message")
     @SendToUser("/queue/responses")

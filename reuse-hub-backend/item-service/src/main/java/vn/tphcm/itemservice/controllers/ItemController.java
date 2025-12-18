@@ -72,6 +72,13 @@ public class ItemController {
         return itemService.getItemById(itemId, currentUserId);
     }
 
+    @GetMapping("/public/{itemId}")
+    public ApiResponse<ItemResponse> getItemByIdPublic(@PathVariable String itemId) {
+        log.info("Received public request to get item by id: {}", itemId);
+        // Use null or empty string for guest users
+        return itemService.getItemById(itemId, null);
+    }
+
     @PostMapping("/like/{userId}/{itemId}")
     public ApiResponse<Void> likeItem(@PathVariable String userId, @PathVariable String itemId) {
         log.info("Received request to like item: {} by user: {}", itemId, userId);

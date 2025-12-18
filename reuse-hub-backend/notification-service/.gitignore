@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+### Github Secret ###
+notification-service/src/main/resources/application-dev.yml

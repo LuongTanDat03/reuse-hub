@@ -41,10 +41,10 @@ spring:
         default-requeue-rejected: false # if false, message will be sent to dead-letter queue
 
 supabase:
-  url: ${SUPABASE_URL:https://yrtipbmujtikijomslgm.supabase.co}
-  service-key: ${SUPABASE_SERVICE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlydGlwYm11anRpa2lqb21zbGdtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDUxODkxNiwiZXhwIjoyMDc2MDk0OTE2fQ.bnwZxeVsIJWhkRyL7K9usaDkjmsp088EYf_ap0DVJhM}
+  url: ${SUPABASE_URL}
+  service-key: ${SUPABASE_SERVICE_KEY}
   bucket: ${SUPABASE_BUCKET:upload-images}
-  public-url: ${SUPABASE_PUBLIC_URL:https://yrtipbmujtikijomslgm.storage.supabase.co/storage/v1/object/public}
+  public-url: ${SUPABASE_PUBLIC_URL}
 
 file:
   upload:
