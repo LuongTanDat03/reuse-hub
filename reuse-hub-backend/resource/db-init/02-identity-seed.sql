@@ -87,17 +87,17 @@ VALUES (
   'admin@reusehub.com',
   '+84987654321',
   'admin',
-  '$2a$10$mDSW1.GbBlSZs9KoCT/SzeqYhqAQEHvD0Py4dh4JofLCEONNR44ia',
+  '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm',
   'ACTIVE',
   NOW(), NOW()
 );
 
 INSERT INTO tbl_user (id, email, phone, status, username, password, created_at, updated_at, created_by, updated_by, is_deleted) VALUES
-('d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a', 'nguyen.van.a@gmail.com', '0912345678', 'ACTIVE', 'nguyenvana', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', NOW(), NOW(), 'system', 'system', false),
-('e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b', 'tran.thi.b@gmail.com', '0923456789', 'ACTIVE', 'tranthib', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', NOW(), NOW(), 'system', 'system', false),
-('f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c', 'le.van.c@gmail.com', '0934567890', 'ACTIVE', 'levanc', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', NOW(), NOW(), 'system', 'system', false),
-('a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d', 'pham.thi.d@gmail.com', '0945678901', 'ACTIVE', 'phamthid', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', NOW(), NOW(), 'system', 'system', false),
-('b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e', 'hoang.van.e@gmail.com', '0956789012', 'ACTIVE', 'hoangvane', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', NOW(), NOW(), 'system', 'system', false);
+('d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a', 'nguyen.van.a@gmail.com', '0912345678', 'ACTIVE', 'nguyenvana', '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm', NOW(), NOW(), 'system', 'system', false),
+('e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b', 'tran.thi.b@gmail.com', '0923456789', 'ACTIVE', 'tranthib', '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm', NOW(), NOW(), 'system', 'system', false),
+('f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c', 'le.van.c@gmail.com', '0934567890', 'ACTIVE', 'levanc', '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm', NOW(), NOW(), 'system', 'system', false),
+('a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d', 'pham.thi.d@gmail.com', '0945678901', 'ACTIVE', 'phamthid', '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm', NOW(), NOW(), 'system', 'system', false),
+('b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e', 'hoang.van.e@gmail.com', '0956789012', 'ACTIVE', 'hoangvane', '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm', NOW(), NOW(), 'system', 'system', false);
 
 INSERT INTO tbl_user_has_role (id, user_id, role_id, created_at, updated_at, created_by, updated_by, is_deleted) VALUES
 ('d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a', 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a', 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', NOW(), NOW(), 'system', 'system', false),

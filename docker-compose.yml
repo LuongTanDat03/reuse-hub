@@ -145,6 +145,9 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASS:-admin}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - PROFILE_SERVICE_URL=http://profile-service:8082
       - BACKEND_SERVICE=http://identity-service:8081
     depends_on:
       discovery-service:
@@ -152,6 +155,8 @@ services:
       postgres:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - reuse-hub-network
@@ -256,6 +261,7 @@ services:
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASS:-admin}
       - BACKEND_SERVICE=http://transaction-service:8084
+      - ITEM_SERVICE_URL=http://item-service:8083
     depends_on:
       discovery-service:
         condition: service_healthy
@@ -429,6 +435,7 @@ services:
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASS:-admin}
       - BACKEND_SERVICE=http://ai-service:8089
+      - ITEM_SERVICE_URL=http://item-service:8083
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GOOGLE_MODEL=${GOOGLE_MODEL:-gemini-2.5-flash-lite}
     depends_on:
@@ -457,6 +464,9 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://admin:password@discovery-service:8761/eureka
+      - ITEM_SERVICE_URL=http://item-service:8083
+      - IDENTITY_SERVICE_URL=http://identity-service:8081
+      - TRANSACTION_SERVICE_URL=http://transaction-service:8084
       - BACKEND_SERVICE=http://admin-service:8090
     depends_on:
       discovery-service:
@@ -623,10 +633,8 @@ services:
       - ./reuse-hub-backend/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx_logs:/var/log/nginx
     depends_on:
-      api-gateway:
-        condition: service_healthy
-      frontend-web:
-        condition: service_healthy
+    - api-gateway
+    - frontend-web
     networks:
       - reuse-hub-network
     healthcheck:

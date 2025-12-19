@@ -38,7 +38,7 @@ feign:
   client:
     config:
       item-service:
-        url: "http://localhost:8083/items"
+        url: "${ITEM_SERVICE_URL:http://localhost:8083}/items"
 
 springdoc:
   api-docs:

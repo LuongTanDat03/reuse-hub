@@ -44,7 +44,7 @@ feign:
   client:
     config:
       profile-service:
-        url: "http://localhost:8082/profile-feign"
+        url: "${PROFILE_SERVICE_URL:http://localhost:8082}/profile-feign"
 
 springdoc:
   api-docs:

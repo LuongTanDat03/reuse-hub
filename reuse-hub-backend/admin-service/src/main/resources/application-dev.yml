@@ -7,11 +7,11 @@ feign:
   client:
     config:
       item-service:
-        url: "http://localhost:8083/item-feign"
+        url: "${ITEM_SERVICE_URL:http://localhost:8083}/item-feign"
       identity-service:
-        url: "http://localhost:8081/identity-feign"
+        url: "${IDENTITY_SERVICE_URL:http://localhost:8081}/identity-feign"
       transaction-service:
-        url: "http://localhost:8084/transaction-feign"
+        url: "${TRANSACTION_SERVICE_URL:http://localhost:8084}/transaction-feign"
 
 springdoc:
   api-docs:

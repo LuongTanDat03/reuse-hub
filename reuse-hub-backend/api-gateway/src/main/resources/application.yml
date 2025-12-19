@@ -25,12 +25,10 @@ spring:
             allowedHeaders: "*"
             allowCredentials: true
             maxAge: 3600
-      server:
-        webflux:
-          discovery:
-            locator:
-              enabled: true
-          routes:
+      discovery:
+        locator:
+          enabled: true
+      routes:
             - id: identity-service
               uri: lb://identity-service
               predicates:
@@ -119,7 +117,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: '*'
+        include: health
 
 eureka:
   client:

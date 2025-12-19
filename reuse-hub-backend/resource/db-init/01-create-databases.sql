@@ -278,7 +278,7 @@ CREATE TABLE IF NOT EXISTS tbl_ratings (
 CREATE TABLE IF NOT EXISTS tbl_item_comments (
     id VARCHAR(255) PRIMARY KEY,
     user_id VARCHAR(255),
-    content TEXT,
+    comment TEXT,
     item_id VARCHAR(255) REFERENCES tbl_items(id),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
@@ -403,132 +403,132 @@ CREATE INDEX IF NOT EXISTS idx_stripe_event_id ON tbl_webhook_events(stripe_even
 -- -- ============================================
 -- -- AUCTION DATABASE - SETUP
 -- -- ============================================
-\c auction;
+-- \c auction;
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Create ENUM types for auction
-DO $$ BEGIN
-    CREATE TYPE auction_status AS ENUM ('PENDING', 'ACTIVE', 'ENDED', 'CANCELLED', 'SOLD');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- -- Create ENUM types for auction
+-- DO $$ BEGIN
+--     CREATE TYPE auction_status AS ENUM ('PENDING', 'ACTIVE', 'ENDED', 'CANCELLED', 'SOLD');
+-- EXCEPTION
+--     WHEN duplicate_object THEN null;
+-- END $$;
 
-DO $$ BEGIN
-    CREATE TYPE bid_status AS ENUM ('ACTIVE', 'OUTBID', 'WINNING', 'WON', 'LOST', 'CANCELLED');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- DO $$ BEGIN
+--     CREATE TYPE bid_status AS ENUM ('ACTIVE', 'OUTBID', 'WINNING', 'WON', 'LOST', 'CANCELLED');
+-- EXCEPTION
+--     WHEN duplicate_object THEN null;
+-- END $$;
 
--- Create tables for auction-service
-CREATE TABLE IF NOT EXISTS tbl_auctions (
-    id VARCHAR(255) PRIMARY KEY,
-    item_id VARCHAR(255),
-    seller_id VARCHAR(255) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    images JSONB DEFAULT '[]',
-    starting_price BIGINT NOT NULL,
-    current_price BIGINT NOT NULL,
-    bid_increment BIGINT NOT NULL,
-    buy_now_price BIGINT,
-    reserve_price BIGINT,
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP NOT NULL,
-    status auction_status DEFAULT 'PENDING',
-    bid_count INTEGER DEFAULT 0,
-    winner_id VARCHAR(255),
-    winning_bid_id VARCHAR(255),
-    category_id VARCHAR(255),
-    address TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
+-- -- Create tables for auction-service
+-- CREATE TABLE IF NOT EXISTS tbl_auctions (
+--     id VARCHAR(255) PRIMARY KEY,
+--     item_id VARCHAR(255),
+--     seller_id VARCHAR(255) NOT NULL,
+--     title VARCHAR(255) NOT NULL,
+--     description TEXT,
+--     images JSONB DEFAULT '[]',
+--     starting_price BIGINT NOT NULL,
+--     current_price BIGINT NOT NULL,
+--     bid_increment BIGINT NOT NULL,
+--     buy_now_price BIGINT,
+--     reserve_price BIGINT,
+--     start_time TIMESTAMP NOT NULL,
+--     end_time TIMESTAMP NOT NULL,
+--     status auction_status DEFAULT 'PENDING',
+--     bid_count INTEGER DEFAULT 0,
+--     winner_id VARCHAR(255),
+--     winning_bid_id VARCHAR(255),
+--     category_id VARCHAR(255),
+--     address TEXT,
+--     created_at TIMESTAMP DEFAULT NOW(),
+--     updated_at TIMESTAMP DEFAULT NOW()
+-- );
 
-CREATE TABLE IF NOT EXISTS tbl_bids (
-    id VARCHAR(255) PRIMARY KEY,
-    auction_id VARCHAR(255) NOT NULL REFERENCES tbl_auctions(id),
-    bidder_id VARCHAR(255) NOT NULL,
-    amount BIGINT NOT NULL,
-    max_auto_bid BIGINT,
-    status bid_status DEFAULT 'ACTIVE',
-    is_auto_bid BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
+-- CREATE TABLE IF NOT EXISTS tbl_bids (
+--     id VARCHAR(255) PRIMARY KEY,
+--     auction_id VARCHAR(255) NOT NULL REFERENCES tbl_auctions(id),
+--     bidder_id VARCHAR(255) NOT NULL,
+--     amount BIGINT NOT NULL,
+--     max_auto_bid BIGINT,
+--     status bid_status DEFAULT 'ACTIVE',
+--     is_auto_bid BOOLEAN DEFAULT FALSE,
+--     created_at TIMESTAMP DEFAULT NOW(),
+--     updated_at TIMESTAMP DEFAULT NOW()
+-- );
 
--- Create indexes for auction
-CREATE INDEX IF NOT EXISTS idx_auction_seller ON tbl_auctions(seller_id);
-CREATE INDEX IF NOT EXISTS idx_auction_item ON tbl_auctions(item_id);
-CREATE INDEX IF NOT EXISTS idx_auction_status ON tbl_auctions(status);
-CREATE INDEX IF NOT EXISTS idx_auction_end_time ON tbl_auctions(end_time);
-CREATE INDEX IF NOT EXISTS idx_bid_auction ON tbl_bids(auction_id);
-CREATE INDEX IF NOT EXISTS idx_bid_bidder ON tbl_bids(bidder_id);
-CREATE INDEX IF NOT EXISTS idx_bid_amount ON tbl_bids(amount);
+-- -- Create indexes for auction
+-- CREATE INDEX IF NOT EXISTS idx_auction_seller ON tbl_auctions(seller_id);
+-- CREATE INDEX IF NOT EXISTS idx_auction_item ON tbl_auctions(item_id);
+-- CREATE INDEX IF NOT EXISTS idx_auction_status ON tbl_auctions(status);
+-- CREATE INDEX IF NOT EXISTS idx_auction_end_time ON tbl_auctions(end_time);
+-- CREATE INDEX IF NOT EXISTS idx_bid_auction ON tbl_bids(auction_id);
+-- CREATE INDEX IF NOT EXISTS idx_bid_bidder ON tbl_bids(bidder_id);
+-- CREATE INDEX IF NOT EXISTS idx_bid_amount ON tbl_bids(amount);
 
--- ============================================
--- MODERATION DATABASE - SETUP
--- ============================================
-\c moderation;
+-- -- ============================================
+-- -- MODERATION DATABASE - SETUP
+-- -- ============================================
+-- \c moderation;
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Create ENUM types for moderation
-DO $$ BEGIN
-    CREATE TYPE report_status AS ENUM ('PENDING', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED', 'ESCALATED');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- -- Create ENUM types for moderation
+-- DO $$ BEGIN
+--     CREATE TYPE report_status AS ENUM ('PENDING', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED', 'ESCALATED');
+-- EXCEPTION
+--     WHEN duplicate_object THEN null;
+-- END $$;
 
-DO $$ BEGIN
-    CREATE TYPE reported_entity_type AS ENUM ('USER', 'ITEM', 'CHAT_MESSAGE', 'REVIEW', 'AUCTION');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- DO $$ BEGIN
+--     CREATE TYPE reported_entity_type AS ENUM ('USER', 'ITEM', 'CHAT_MESSAGE', 'REVIEW', 'AUCTION');
+-- EXCEPTION
+--     WHEN duplicate_object THEN null;
+-- END $$;
 
-DO $$ BEGIN
-    CREATE TYPE report_type AS ENUM (
-        'SPAM', 'HARASSMENT', 'INAPPROPRIATE_CONTENT', 'FRAUD', 
-        'FAKE_ITEM', 'PROHIBITED_ITEM', 'COPYRIGHT', 'OTHER'
-    );
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- DO $$ BEGIN
+--     CREATE TYPE report_type AS ENUM (
+--         'SPAM', 'HARASSMENT', 'INAPPROPRIATE_CONTENT', 'FRAUD', 
+--         'FAKE_ITEM', 'PROHIBITED_ITEM', 'COPYRIGHT', 'OTHER'
+--     );
+-- EXCEPTION
+--     WHEN duplicate_object THEN null;
+-- END $$;
 
-DO $$ BEGIN
-    CREATE TYPE moderation_action AS ENUM (
-        'WARNING', 'CONTENT_REMOVED', 'TEMPORARY_BAN', 
-        'PERMANENT_BAN', 'NO_ACTION', 'REFERRED_TO_LEGAL'
-    );
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- DO $$ BEGIN
+--     CREATE TYPE moderation_action AS ENUM (
+--         'WARNING', 'CONTENT_REMOVED', 'TEMPORARY_BAN', 
+--         'PERMANENT_BAN', 'NO_ACTION', 'REFERRED_TO_LEGAL'
+--     );
+-- EXCEPTION
+--     WHEN duplicate_object THEN null;
+-- END $$;
 
--- Create tables for moderation-service
-CREATE TABLE IF NOT EXISTS tbl_reports (
-    id VARCHAR(255) PRIMARY KEY,
-    reporter_id VARCHAR(255) NOT NULL,
-    reported_user_id VARCHAR(255),
-    entity_type reported_entity_type NOT NULL,
-    entity_id VARCHAR(255) NOT NULL,
-    report_type report_type NOT NULL,
-    reason TEXT NOT NULL,
-    evidence_urls JSONB DEFAULT '[]',
-    status report_status DEFAULT 'PENDING',
-    reviewer_id VARCHAR(255),
-    reviewed_at TIMESTAMP,
-    action_taken moderation_action,
-    admin_note TEXT,
-    resolved_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
+-- -- Create tables for moderation-service
+-- CREATE TABLE IF NOT EXISTS tbl_reports (
+--     id VARCHAR(255) PRIMARY KEY,
+--     reporter_id VARCHAR(255) NOT NULL,
+--     reported_user_id VARCHAR(255),
+--     entity_type reported_entity_type NOT NULL,
+--     entity_id VARCHAR(255) NOT NULL,
+--     report_type report_type NOT NULL,
+--     reason TEXT NOT NULL,
+--     evidence_urls JSONB DEFAULT '[]',
+--     status report_status DEFAULT 'PENDING',
+--     reviewer_id VARCHAR(255),
+--     reviewed_at TIMESTAMP,
+--     action_taken moderation_action,
+--     admin_note TEXT,
+--     resolved_at TIMESTAMP,
+--     created_at TIMESTAMP DEFAULT NOW(),
+--     updated_at TIMESTAMP DEFAULT NOW()
+-- );
 
--- Create indexes for moderation
-CREATE INDEX IF NOT EXISTS idx_report_reporter ON tbl_reports(reporter_id);
-CREATE INDEX IF NOT EXISTS idx_report_reported_user ON tbl_reports(reported_user_id);
-CREATE INDEX IF NOT EXISTS idx_report_status ON tbl_reports(status);
-CREATE INDEX IF NOT EXISTS idx_report_entity ON tbl_reports(entity_type, entity_id);
+-- -- Create indexes for moderation
+-- CREATE INDEX IF NOT EXISTS idx_report_reporter ON tbl_reports(reporter_id);
+-- CREATE INDEX IF NOT EXISTS idx_report_reported_user ON tbl_reports(reported_user_id);
+-- CREATE INDEX IF NOT EXISTS idx_report_status ON tbl_reports(status);
+-- CREATE INDEX IF NOT EXISTS idx_report_entity ON tbl_reports(entity_type, entity_id);
 
 -- ============================================
 -- SUCCESS MESSAGE

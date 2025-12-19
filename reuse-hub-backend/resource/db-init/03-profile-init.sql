@@ -41,7 +41,7 @@ INSERT INTO tbl_users (
     12,
     500000,
     'nguyenvana',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm',
     'VERIFIED',
     NOW(),
     NOW()
@@ -61,7 +61,7 @@ INSERT INTO tbl_users (
     25,
     1200000,
     'tranthib',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm',
     'VERIFIED',
     NOW(),
     NOW()
@@ -81,7 +81,7 @@ INSERT INTO tbl_users (
     8,
     300000,
     'levanc',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm',
     'PENDING',
     NOW(),
     NOW()
@@ -101,7 +101,7 @@ INSERT INTO tbl_users (
     45,
     2500000,
     'phamthid',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm',
     'VERIFIED',
     NOW(),
     NOW()
@@ -121,7 +121,7 @@ INSERT INTO tbl_users (
     5,
     150000,
     'hoangvane',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$8QFeHOfUVvnszm2blTcUJu9zT1AauYmw6RurI34jG/DywmeYGBeqm',
     'NOT_SUBMITTED',
     NOW(),
     NOW()
